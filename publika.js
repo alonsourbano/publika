@@ -1,7 +1,6 @@
 Module.register("publika", {
-  // Default module config.
   defaults: {
-    stops: [1130113],
+    stops: [],
     stopTimesCount: 5,
     fontawesomeCode: undefined,
 
@@ -25,8 +24,6 @@ Module.register("publika", {
 
   socketNotificationReceived: function (notification, payload) {
     if (notification === "TIMETABLE") {
-      // payload.stop name/id
-      // payload.stopTimes array
       this.timeTable[payload.stop] = payload;
       this.loaded = true;
       this.updateDom();
@@ -52,8 +49,6 @@ Module.register("publika", {
 
   start: function () {
     Log.info("Starting module: " + this.name);
-    // Set locale.
-    //moment.locale(config.language);
   },
 
   getDom: function () {
@@ -75,12 +70,8 @@ Module.register("publika", {
     var large = document.createElement("div");
     large.className = "light small " + this.config.timetableClass;
     var htmlElements = this.getStops()
-      .map(function (stop) {
-        return this.getTable(this.getTimeTable(stop));
-      })
-      .reduce(function (p, c) {
-        return `${p}<tr><td>&nbsp;</td></tr>${c}`;
-      }, "<table>");
+      .map((stop) => this.getTable(this.getTimeTable(stop)))
+      .reduce((p, c) => `${p}<tr><td>&nbsp;</td></tr>${c}`, "<table>");
     large.innerHTML = `${htmlElements}</table>`;
     wrapper.appendChild(large);
 
@@ -103,11 +94,10 @@ Module.register("publika", {
     var alerts =
       data.alerts.length > 0
         ? data.alerts.map(
-            (alert) =>
-              `<tr ${colspan}><td>${this.getAlertIcon()} ${
-                alert.alertHash
-              }<td></tr>`
-          )
+          (alert) =>
+            `<tr ${colspan}><td>${this.getAlertIcon()} ${alert.alertHash
+            }<td></tr>`
+        )
         : "";
     return `${headerRow}${rows}${alerts}`;
   },
@@ -133,10 +123,9 @@ Module.register("publika", {
     return columns
       .map(
         (column) =>
-          `<td${
-            typeof column.style !== "undefined"
-              ? ` class="${column.style}"`
-              : ""
+          `<td${typeof column.style !== "undefined"
+            ? ` class="${column.style}"`
+            : ""
           }>${typeof column.value !== "undefined" ? column.value : column}</td>`
       )
       .reduce((p, c) => `${p}${c}`, "");
@@ -182,9 +171,8 @@ Module.register("publika", {
 
   getStopNameWithVehicleMode: function (item) {
     return this.config.fontawesomeCode
-      ? `<i class="${this.getVehicleModeIcon(item.vehicleMode)}"></i> ${
-          item.name
-        }`
+      ? `<i class="${this.getVehicleModeIcon(item.vehicleMode)}"></i> ${item.name
+      }`
       : `${item.name} (${item.vehicleMode})`;
   },
 
