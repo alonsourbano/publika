@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/require-jsdoc */
 var moment = require("moment");
 const fetch = require("node-fetch");
 var NodeHelper = require("node_helper");
@@ -44,6 +45,7 @@ function getSchedule(baseUrl, stop, count, successCb, errorCB) {
         platformCode: data.platformCode,
         zoneId: data.zoneId,
         alerts: data.alerts,
+        locationType: data.locationType,
         stopTimes: processStopTimeData(data)
       };
       successCb(response);

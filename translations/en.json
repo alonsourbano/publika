@@ -1,0 +1,9 @@
+{
+  "ERROR_SCHEDULE": "Couldn't get schedule",
+  "MINUTES_ABBR": "min",
+  "NOW": "Now",
+  "PIER": "Pier",
+  "PLATFORM": "Platform",
+  "SETUP_MODULE": "Please setup the stops in the config for module",
+  "TRACK": "Track"
+}

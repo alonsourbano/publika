@@ -34,6 +34,14 @@ Module.register("publika", {
     return Object.keys(this.timeTable) || [];
   },
 
+  getTranslations: function () {
+    return {
+      en: "translations/en.json",
+      fi: "translations/fi.json",
+      sv: "translations/sv.json"
+    };
+  },
+
   getTimeTable: function (stop) {
     // stop might be object with id and name
     var id = stop.id || stop;
@@ -55,8 +63,7 @@ Module.register("publika", {
     var wrapper = document.createElement("div");
 
     if (!this.config.stops.length) {
-      wrapper.innerHTML =
-        "Please setup the stops in the config for module: " + this.name + ".";
+      wrapper.innerHTML = `${this.translate("SETUP_MODULE")}${this.name}.`;
       wrapper.className = "dimmed light small";
       return wrapper;
     }
@@ -80,7 +87,7 @@ Module.register("publika", {
 
   getTable: function (data) {
     if (!data) {
-      return "<span>Couldn't get schedule</span>";
+      return `<span>${this.translate("ERROR_SCHEDULE")}</span>`;
     }
     const colspan = "colspan=5";
     var headerRow = `<tr class="stop-header"><th ${colspan}>${this.getHeaderRow(
@@ -137,8 +144,8 @@ Module.register("publika", {
     }
     const realtimeIcon = item.realtime ? "" : "~";
     return item.until > 0
-      ? `${realtimeIcon}${item.until} min`
-      : `${realtimeIcon}Now`;
+      ? `${realtimeIcon}${item.until} ${this.translate("MINUTES_ABBR")}`
+      : `${realtimeIcon}${this.translate("NOW")}`;
   },
 
   getHeaderRow: function (data) {
@@ -157,13 +164,14 @@ Module.register("publika", {
       items.splice(
         2,
         0,
-        "Platform",
+        this.getPlatformText(data.vehicleMode),
         `<span class="stop-platform">${data.platformCode}</span>`
       );
     }
     if (data.stopConfig?.minutesFrom) {
       items.push(
-        `<span class="minutes-from">+${data.stopConfig.minutesFrom} min</span>`
+        `<span class="minutes-from">+${data.stopConfig.minutesFrom
+        } ${this.translate("MINUTES_ABBR")}</span>`
       );
     }
     return items.reduce((p, c) => `${p} ${c}`, "");
@@ -197,5 +205,22 @@ Module.register("publika", {
     return this.config.fontawesomeCode
       ? '<i class="fa-solid fa-triangle-exclamation"></i>'
       : "!!!";
+  },
+
+  getPlatformText: function (vehicleMode) {
+    const defaultText = this.translate("PLATFORM");
+    return new Map([
+      ["AIRPLANE", defaultText],
+      ["BICYCLE", defaultText],
+      ["BUS", defaultText],
+      ["CABLE_CAR", this.translate("TRACK")],
+      ["CAR", defaultText],
+      ["FERRY", this.translate("PIER")],
+      ["FUNICULAR", this.translate("TRACK")],
+      ["GONDOLA", this.translate("TRACK")],
+      ["RAIL", this.translate("TRACK")],
+      ["SUBWAY", this.translate("TRACK")],
+      ["TRAM", defaultText]
+    ]).get(vehicleMode);
   }
 });
