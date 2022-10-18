@@ -28,7 +28,7 @@
  * MIT Licensed.
  */
 
-Module.register("mm-hsl-timetable", {
+Module.register("publika", {
 
 	// Default module config.
 	defaults: {

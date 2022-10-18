@@ -1,37 +1,37 @@
-.mm-hsl-timetable .module-content {
+.publika .module-content {
   text-align: left;
 }
 
-.mm-hsl-timetable .stop-subheader td {
+.publika .stop-subheader td {
   font-size: 70%;
 }
 
-.mm-hsl-timetable table td.time {
+.publika table td.time {
   text-align: right;
 }
 
-.mm-hsl-timetable table td.smaller {
+.publika table td.smaller {
   font-size: 70%;
 }
 
-.mm-hsl-timetable table .stop-code {
+.publika table .stop-code {
   border: 1px solid;
   border-radius: 4px;
   padding: 1px 2px;
 }
 
-.mm-hsl-timetable table .stop-platform {
+.publika table .stop-platform {
   border: 1px solid;
   border-radius: 4px;
   padding: 1px 5px;
 }
 
-.mm-hsl-timetable table .stop-zone {
+.publika table .stop-zone {
   border: 1px solid;
   border-radius: 16px;
   padding: 1px 5px;
 }
 
-.mm-hsl-timetable table .minutes-from {
+.publika table .minutes-from {
   float: right;
 }
