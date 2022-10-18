@@ -1,2 +1,3 @@
 # Publika
-HSL (Helsinki region, Finland) public transport schedule times modules for MirrorMirror project
+
+HSL (Helsinki region, Finland) public transport schedule times module for MirrorMirror project
