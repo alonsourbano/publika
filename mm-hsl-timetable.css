@@ -1,0 +1,37 @@
+.mm-hsl-timetable .module-content {
+  text-align: left;
+}
+
+.mm-hsl-timetable .stop-subheader td {
+  font-size: 70%;
+}
+
+.mm-hsl-timetable table td.time {
+  text-align: right;
+}
+
+.mm-hsl-timetable table td.smaller {
+  font-size: 70%;
+}
+
+.mm-hsl-timetable table .stop-code {
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 1px 2px;
+}
+
+.mm-hsl-timetable table .stop-platform {
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.mm-hsl-timetable table .stop-zone {
+  border: 1px solid;
+  border-radius: 16px;
+  padding: 1px 5px;
+}
+
+.mm-hsl-timetable table .minutes-from {
+  float: right;
+}
