@@ -1,5 +1,5 @@
-module.exports = (stop, count, startTime) => `{
-  stop(id: "HSL:${stop}") {
+module.exports = (type, stop, count, startTime) => `{
+  ${type}(id: "HSL:${stop}") {
     name
     code
     desc
@@ -9,6 +9,7 @@ module.exports = (stop, count, startTime) => `{
     vehicleType
     vehicleMode
     platformCode
+    locationType
     parentStation {
       gtfsId
       name
