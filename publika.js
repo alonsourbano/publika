@@ -21,9 +21,11 @@ Module.register("publika", {
         Log.log(
           `${this.name} received a module notification: ${notification} from sender: ${sender.name}`
         );
+        Log.log(payload);
       }
     } else {
       Log.log(`${this.name} received a module notification: ${notification}`);
+      Log.log(payload);
     }
     if (notification === "DOM_OBJECTS_CREATED") {
       this.sendSocketNotification("CONFIG", this.config);
