@@ -5,12 +5,10 @@ HSL (Helsinki region, Finland) public transport schedule times module for Mirror
 ![Module](docs/yrsqqZhy.png)
 
 ## What it does
-___
 
 The `publika` module shows public transport timetables from HSL (Helsinki region, Finland)
 
 ## Functionalities
-___
 
 - Can display several stops/stations based on configuration
 - Displays stop code, platform/track and ticket zones
@@ -26,7 +24,6 @@ ___
 - Stop and station IDs can be searched directly with the module
 
 ## Dependencies
-___
 
 - DigiTransit (**required**, free): https://digitransit.fi/en/developers/
   - Used for fetching timetables and searching for stops and stations
@@ -35,7 +32,6 @@ ___
   - Used for displaying icons. Not needed, but it enhances the user experience
 
 ## Other screenshots
-___
 - Single stop view:
 
 ![Bus view](docs/JKsyQpwj.png)
@@ -49,7 +45,6 @@ ___
 ![Supports english, finnish and swedish](docs/guxNoZSP.png)
 
 ## Getting started
-___
 
 1) Clone this repository under `MagicMirror/modules` folder
 2) Add the module to the modules array in the `MagicMirror/config/config.js` file:
@@ -68,7 +63,6 @@ ___
 ```
 
 ### More configurations
-___
 
 `config`:
 
