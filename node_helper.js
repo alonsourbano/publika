@@ -17,7 +17,7 @@ function getSchedule(baseUrl, stop, count, successCb, errorCB) {
   fetch(baseUrl, {
     method: "POST",
     body: getHSLPayload(
-      stop.isStation ? "station" : "stop",
+      stop.type ?? "stop",
       stop.id || stop,
       count,
       moment().unix() + (stop.minutesFrom || 0) * 60
@@ -31,12 +31,9 @@ function getSchedule(baseUrl, stop, count, successCb, errorCB) {
         errorCB("No data");
         return;
       }
-      const data = stop.isStation ? json.data.station : json.data.stop;
+      const data = stop.type ? json.data[stop.type] : json.data.stop;
       if (!data) {
-        errorCB(
-          `No ${stop.isStation ? "station" : "stop"} data for ${stop.id || stop
-          }`
-        );
+        errorCB(`No ${stop.type ?? "stop"} data for ${stop.id || stop}`);
         return;
       }
       var response = {
