@@ -2,21 +2,22 @@
 var moment = require("moment");
 const fetch = require("node-fetch");
 var NodeHelper = require("node_helper");
-const getHSLPayload = require("./hsl-graphiql");
+const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
+const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
+
+const nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
+const headers = {
+  "Content-Type": "application/graphql",
+  "User-Agent":
+    "Mozilla/5.0 (Node.js " + nodeVersion + ") MagicMirror/" + global.version,
+  "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
+  Pragma: "no-cache"
+};
 
 function getSchedule(baseUrl, stop, count, successCb, errorCB) {
-  const nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
-  const headers = {
-    "Content-Type": "application/graphql",
-    "User-Agent":
-      "Mozilla/5.0 (Node.js " + nodeVersion + ") MagicMirror/" + global.version,
-    "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
-    Pragma: "no-cache"
-  };
-
   fetch(baseUrl, {
     method: "POST",
-    body: getHSLPayload(
+    body: getHSLStopTimesQuery(
       stop.type ?? "stop",
       stop.id || stop,
       count,
@@ -36,9 +37,10 @@ function getSchedule(baseUrl, stop, count, successCb, errorCB) {
         errorCB(`No ${stop.type ?? "stop"} data for ${stop.id || stop}`);
         return;
       }
-      var response = {
+      const response = {
         stopConfig: stop.id ? stop : undefined,
         stop: stop.id || stop,
+        responseType: "TIMETABLE",
         name: data.name,
         vehicleMode: data.vehicleMode,
         desc: data.desc,
@@ -48,6 +50,31 @@ function getSchedule(baseUrl, stop, count, successCb, errorCB) {
         alerts: data.alerts,
         locationType: data.locationType,
         stopTimes: processStopTimeData(data)
+      };
+      successCb(response);
+    })
+    .catch((error) => {
+      errorCB(error);
+    });
+}
+
+function getStopSearch(baseUrl, stop, successCb, errorCB) {
+  fetch(baseUrl, {
+    method: "POST",
+    body: getHSLStopSearchQuery(stop),
+    headers: headers
+  })
+    .then(NodeHelper.checkFetchStatus)
+    .then((response) => response.json())
+    .then((json) => {
+      if (!json.data) {
+        errorCB("No data");
+        return;
+      }
+      const response = {
+        stop: stop,
+        responseType: "STOP_SEARCH",
+        stops: json.data.stops
       };
       successCb(response);
     })
@@ -67,7 +94,7 @@ function processStopTimeData(json) {
     const date = moment(datVal);
     const stopTime = {
       line: value.trip.routeShortName,
-      headSign: getHeadSign(value.headsign ?? ""),
+      headsign: value.headsign,
       alerts: value.trip.alerts,
       time: date.format("H:mm"),
       realtime: value.realtime,
@@ -78,9 +105,6 @@ function processStopTimeData(json) {
   });
   return times;
 }
-
-const getHeadSign = (headsign) =>
-  headsign.includes(" via ") ? headsign.split(" via ").at(0) : headsign;
 
 const getUntil = (date) =>
   Math.floor(moment.duration(date.diff(moment())).asMinutes());
@@ -102,6 +126,23 @@ module.exports = NodeHelper.create({
   fetchTimetables() {
     var self = this;
     this.config.stops.forEach((stop) => {
+      if (stop.disabled) {
+        return;
+      }
+      if (typeof stop === "string" && isNaN(stop)) {
+        return getStopSearch(
+          this.config.apiURL,
+          stop,
+          (data) => {
+            self.sendSocketNotification("TIMETABLE", data);
+            self.scheduleNextFetch(this.config.updateInterval);
+          },
+          (err) => {
+            console.error(err);
+            self.scheduleNextFetch(this.config.retryDelay);
+          }
+        );
+      }
       getSchedule(
         this.config.apiURL,
         stop,

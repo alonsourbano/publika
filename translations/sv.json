@@ -1,10 +1,22 @@
 {
-  "ERROR_SCHEDULE": null,
+  "ERROR_SCHEDULE": "Det gick inte att få schemat",
   "MINUTES_ABBR": "min",
   "NOW": "Nu",
-  "PIER": null,
+  "SETUP_MODULE": "Ställ in stoppen i konfigurationen för modulen",
+  "CLUSTER": "Kluster",
+  "PIER": "Pir",
   "PLATFORM": "Plattform",
-  "SETUP_MODULE": null,
   "STATION": "Station",
-  "TRACK": "Spår"
+  "TRACK": "Spår",
+  "AIRPLANE": "Flygplan",
+  "BICYCLE": "Cykel",
+  "BUS": "Buss",
+  "CABLE_CAR": "Linbana",
+  "CAR": "Bil",
+  "FERRY": "Färja",
+  "FUNICULAR": "Bergbana",
+  "GONDOLA": "Gondolbana",
+  "RAIL": "Tåg",
+  "SUBWAY": "Tunnelbana",
+  "TRAM": "Spårvagn"
 }

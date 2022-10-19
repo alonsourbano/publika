@@ -4,9 +4,6 @@ module.exports = (type, stop, count, startTime) => `{
     code
     desc
     zoneId
-    direction
-    timezone
-    vehicleType
     vehicleMode
     platformCode
     locationType
