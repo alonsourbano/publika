@@ -4,19 +4,27 @@ Module.register("publika", {
     stopTimesCount: 5,
     fontawesomeCode: undefined,
 
-    initialLoadDelay: 0, // 0 seconds delay
-    updateInterval: 50 * 1000, // every 50 seconds
-    //updateInterval: 2 * 1000, // every 2 seconds
-    retryDelay: 2500,
+    initialLoadDelay: 0 * 1000, // 0 seconds delay
+    updateInterval: 20 * 1000, // every 20 seconds
+    retryDelay: 5 * 1000, // every 20 seconds
 
     apiURL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
 
     timetableClass: "timetable"
   },
 
-  timeTable: {},
+  timeTable: [],
 
   notificationReceived: function (notification, payload, sender) {
+    if (sender) {
+      if (sender.name !== "clock") {
+        Log.log(
+          `${this.name} received a module notification: ${notification} from sender: ${sender.name}`
+        );
+      }
+    } else {
+      Log.log(`${this.name} received a module notification: ${notification}`);
+    }
     if (notification === "DOM_OBJECTS_CREATED") {
       this.sendSocketNotification("CONFIG", this.config);
     }
@@ -24,7 +32,10 @@ Module.register("publika", {
 
   socketNotificationReceived: function (notification, payload) {
     if (notification === "TIMETABLE") {
-      this.timeTable[payload.stop] = payload;
+      const index = this.timeTable.findIndex(
+        (stop) => stop.stop === payload.stop
+      );
+      this.timeTable[index] = payload;
       this.loaded = true;
       this.updateDom();
     }
@@ -57,6 +68,9 @@ Module.register("publika", {
 
   start: function () {
     Log.info("Starting module: " + this.name);
+    this.config.stops.forEach((stop) => {
+      this.timeTable.push({ stop: stop.id ?? stop, empty: true });
+    });
   },
 
   getDom: function () {
@@ -90,6 +104,10 @@ Module.register("publika", {
       return `<span>${this.translate("ERROR_SCHEDULE")}</span>`;
     }
     const colspan = "colspan=5";
+    if (data.empty) {
+      return `<tr class="stop-header"><th ${colspan}>HSL:${data.stop
+        }</th></tr><tr><td ${colspan}>${this.translate("LOADING")}</td></tr>`;
+    }
     var headerRow = `<tr class="stop-header"><th ${colspan}>${this.getHeaderRow(
       data
     )}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
@@ -155,11 +173,17 @@ Module.register("publika", {
   },
 
   getSubheaderRow: function (data) {
-    const items = [
-      data.desc,
-      `<span class="stop-code">${data.code}</span>`,
-      `<span class="stop-zone">${data.zoneId}</span>`
-    ];
+    const items =
+      data.locationType === "STATION"
+        ? [
+          `<span class="stop-code">${this.translate("STATION")}</span>`,
+          `<span class="stop-zone">${data.zoneId}</span>`
+        ]
+        : [
+          data.desc,
+          `<span class="stop-code">${data.code}</span>`,
+          `<span class="stop-zone">${data.zoneId}</span>`
+        ];
     if (data.platformCode) {
       items.splice(
         2,
@@ -196,7 +220,7 @@ Module.register("publika", {
       ["FUNICULAR", "fa-solid fa-cable-car"], // No icon found for funicular
       ["GONDOLA", "fa-solid fa-cable-car"], // A gondola (lift) should be the same as cable car
       ["RAIL", "fa-solid fa-train"],
-      ["SUBWAY", "fa-solid fa-train-subway"],
+      ["SUBWAY", "fa-solid fa-m"],
       ["TRAM", "fa-solid fa-train-tram"]
     ]).get(vehicleMode);
   },
