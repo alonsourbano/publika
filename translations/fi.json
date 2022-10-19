@@ -2,9 +2,21 @@
   "ERROR_SCHEDULE": "Aikataulua ei voitu saada",
   "MINUTES_ABBR": "min",
   "NOW": "Nyt",
+  "SETUP_MODULE": "Ole hyvä ja aseta pysäkit moduulin konfiguraatiossa",
+  "CLUSTER": "Klusteri",
   "PIER": "Laituri",
   "PLATFORM": "Laituri",
-  "SETUP_MODULE": "Ole hyvä ja aseta pysäkit moduulin konfiguraatiossa",
   "STATION": "Asema",
-  "TRACK": "Raite"
+  "TRACK": "Raite",
+  "AIRPLANE": "Lentokone",
+  "BICYCLE": "Polkupyörä",
+  "BUS": "Bussi",
+  "CABLE_CAR": "Köysirata",
+  "CAR": "Auto",
+  "FERRY": "Lautta",
+  "FUNICULAR": "Funikulaari",
+  "GONDOLA": "Gondolihissi",
+  "RAIL": "Juna",
+  "SUBWAY": "Metro",
+  "TRAM": "Raitiovaunu"
 }

@@ -4,9 +4,9 @@ Module.register("publika", {
     stopTimesCount: 5,
     fontawesomeCode: undefined,
 
-    initialLoadDelay: 0 * 1000, // 0 seconds delay
-    updateInterval: 20 * 1000, // every 20 seconds
-    retryDelay: 5 * 1000, // every 20 seconds
+    initialLoadDelay: 0 * 1000, // N seconds delay
+    updateInterval: 50 * 1000, // every N seconds
+    retryDelay: 50 * 1000, // every N seconds
 
     apiURL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
 
@@ -53,6 +53,16 @@ Module.register("publika", {
     };
   },
 
+  getScripts: function () {
+    return this.config.fontawesomeCode
+      ? [`https://kit.fontawesome.com/${this.config.fontawesomeCode}.js`]
+      : [];
+  },
+
+  getStyles: function () {
+    return [this.file(`${this.name}.css`)];
+  },
+
   getTimeTable: function (stop) {
     // stop might be object with id and name
     var id = stop.id || stop;
@@ -69,7 +79,11 @@ Module.register("publika", {
   start: function () {
     Log.info("Starting module: " + this.name);
     this.config.stops.forEach((stop) => {
-      this.timeTable.push({ stop: stop.id ?? stop, empty: true });
+      this.timeTable.push({
+        stop: stop.id ?? stop,
+        empty: true,
+        disabled: stop.disabled
+      });
     });
   },
 
@@ -99,61 +113,88 @@ Module.register("publika", {
     return wrapper;
   },
 
-  getTable: function (data) {
-    if (!data) {
+  colspan: "colspan=4",
+
+  getTable: function (stop) {
+    if (!stop) {
       return `<span>${this.translate("ERROR_SCHEDULE")}</span>`;
     }
-    const colspan = "colspan=5";
-    if (data.empty) {
-      return `<tr class="stop-header"><th ${colspan}>HSL:${data.stop
-        }</th></tr><tr><td ${colspan}>${this.translate("LOADING")}</td></tr>`;
+    if (stop.disabled) {
+      return "";
     }
-    var headerRow = `<tr class="stop-header"><th ${colspan}>${this.getHeaderRow(
-      data
-    )}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
-      data
-    )}<td></tr>`;
-    var rows = data.stopTimes
-      .map((item) => `<tr>${this.getRow(item)}</tr>`)
+    if (stop.empty) {
+      return `<tr class="stop-header"><th ${this.colspan}>HSL:${stop.stop
+        }</th></tr><tr><td ${this.colspan}>${this.translate(
+          "LOADING"
+        )}</td></tr>`;
+    }
+    if (stop.responseType === "TIMETABLE") {
+      return this.getTableForTimetable(stop);
+    }
+    return this.getTableForStopSearch(stop);
+  },
+
+  getTableForTimetable: function (stop) {
+    var headerRow = `<tr class="stop-header"><th ${this.colspan
+      }>${this.getHeaderRow(stop)}</th></tr><tr class="stop-subheader"><td ${this.colspan
+      }>${this.getSubheaderRow(stop)}<td></tr>`;
+    var rows = stop.stopTimes
+      .map((item) => `<tr>${this.getRowForTimetable(item)}</tr>`)
       .reduce((p, c) => `${p}${c}`, "");
     var alerts =
-      data.alerts.length > 0
-        ? data.alerts.map(
+      stop.alerts.length > 0
+        ? stop.alerts.map(
           (alert) =>
-            `<tr ${colspan}><td>${this.getAlertIcon()} ${alert.alertHash
+            `<tr><td ${this.colspan}>${this.getAlertIcon()} ${alert.alertHash
             }<td></tr>`
         )
         : "";
     return `${headerRow}${rows}${alerts}`;
   },
 
-  getScripts: function () {
-    return this.config.fontawesomeCode
-      ? [`https://kit.fontawesome.com/${this.config.fontawesomeCode}.js`]
-      : [];
-  },
-
-  getStyles: function () {
-    return [this.file(`${this.name}.css`)];
-  },
-
-  getRow: function (item) {
+  getRowForTimetable: function (item) {
     const columns = [
       item.line,
-      item.alerts.length > 0 ? this.getAlertIcon() : "",
-      item.headSign,
+      this.getHeadsign(item),
       { value: this.getUntilText(item), style: "time smaller" },
       { value: item.time, style: "time" }
     ];
     return columns
       .map(
         (column) =>
-          `<td${typeof column.style !== "undefined"
-            ? ` class="${column.style}"`
-            : ""
-          }>${typeof column.value !== "undefined" ? column.value : column}</td>`
+          `<td${column.style ? ` class="${column.style}"` : ""}>${column.value ?? column
+          }</td>`
       )
       .reduce((p, c) => `${p}${c}`, "");
+  },
+
+  getHeadsign: function (item) {
+    const headsign = item.headsign?.includes(" via ")
+      ? item.headsign.split(" via ").at(0)
+      : item.headsign;
+    return item.alerts.length > 0
+      ? `${this.getAlertIcon()} ${headsign}`
+      : headsign;
+  },
+
+  getTableForStopSearch: function (stop) {
+    var headerRow = `<tr class="stop-header"><th ${this.colspan}>${this.config.fontawesomeCode
+      ? '<i class="fa-solid fa-magnifying-glass"></i> '
+      : ""
+      }${stop.stop}</th></tr>`;
+    var rows = stop.stops
+      .map(
+        (item) =>
+          `<tr><td ${this.colspan}>${this.getStopNameWithVehicleMode(
+            item,
+            item.gtfsId.split(":").at(1)
+          )}</td></tr><tr class="stop-subheader"><td ${this.colspan
+          }>${this.getSubheaderRow(item)}</td></tr><tr class="stop-subheader"><td ${this.colspan
+          }>${this.translate("STATION")}: ${item.parentStation.gtfsId.split(":").at(1)} • ${item.parentStation.name}</td></tr><tr class="stop-subheader"><td ${this.colspan
+          }>${this.translate("CLUSTER")}: ${item.cluster.gtfsId} • ${item.cluster.name}</td></tr><tr><td>&nbsp;</td></tr>`
+      )
+      .reduce((p, c) => `${p}${c}`, "");
+    return `${headerRow}${rows}`;
   },
 
   getUntilText: function (item) {
@@ -166,46 +207,46 @@ Module.register("publika", {
       : `${realtimeIcon}${this.translate("NOW")}`;
   },
 
-  getHeaderRow: function (data) {
-    return data.stopConfig?.name
-      ? `${this.getStopNameWithVehicleMode(data)} - ${data.stopConfig.name}`
-      : this.getStopNameWithVehicleMode(data);
+  getHeaderRow: function (stop) {
+    return stop.stopConfig?.name
+      ? `${this.getStopNameWithVehicleMode(stop)} - ${stop.stopConfig.name}`
+      : this.getStopNameWithVehicleMode(stop);
   },
 
-  getSubheaderRow: function (data) {
+  getSubheaderRow: function (stop) {
     const items =
-      data.locationType === "STATION"
+      stop.locationType === "STATION"
         ? [
           `<span class="stop-code">${this.translate("STATION")}</span>`,
-          `<span class="stop-zone">${data.zoneId}</span>`
+          `<span class="stop-zone">${stop.zoneId}</span>`
         ]
         : [
-          data.desc,
-          `<span class="stop-code">${data.code}</span>`,
-          `<span class="stop-zone">${data.zoneId}</span>`
+          stop.desc,
+          `<span class="stop-code">${stop.code}</span>`,
+          `<span class="stop-zone">${stop.zoneId}</span>`
         ];
-    if (data.platformCode) {
+    if (stop.platformCode) {
       items.splice(
         2,
         0,
-        this.getPlatformText(data.vehicleMode),
-        `<span class="stop-platform">${data.platformCode}</span>`
+        this.getPlatformText(stop.vehicleMode),
+        `<span class="stop-platform">${stop.platformCode}</span>`
       );
     }
-    if (data.stopConfig?.minutesFrom) {
+    if (stop.stopConfig?.minutesFrom) {
       items.push(
-        `<span class="minutes-from">+${data.stopConfig.minutesFrom
+        `<span class="minutes-from">+${stop.stopConfig.minutesFrom
         } ${this.translate("MINUTES_ABBR")}</span>`
       );
     }
     return items.reduce((p, c) => `${p} ${c}`, "");
   },
 
-  getStopNameWithVehicleMode: function (item) {
+  getStopNameWithVehicleMode: function (item, includeId = undefined) {
+    const name = includeId ? `${includeId} • ${item.name}` : item.name;
     return this.config.fontawesomeCode
-      ? `<i class="${this.getVehicleModeIcon(item.vehicleMode)}"></i> ${item.name
-      }`
-      : `${item.name} (${item.vehicleMode})`;
+      ? `<i class="${this.getVehicleModeIcon(item.vehicleMode)}"></i> ${name}`
+      : `${name} (${this.translate(item.vehicleMode)})`;
   },
 
   getVehicleModeIcon: function (vehicleMode) {

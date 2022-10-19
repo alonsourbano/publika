@@ -1,0 +1,19 @@
+{
+  "name": "publika",
+  "version": "1.0.0",
+  "description": "HSL (Helsinki region, Finland) public transport schedule times module for MirrorMirror project",
+  "main": "publika.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alonsourbano/publika.git"
+  },
+  "author": "Alonso Urbano",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alonsourbano/publika/issues"
+  },
+  "homepage": "https://github.com/alonsourbano/publika#readme"
+}
