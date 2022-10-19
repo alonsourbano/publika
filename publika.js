@@ -193,9 +193,15 @@ Module.register("publika", {
             item,
             item.gtfsId.split(":").at(1)
           )}</td></tr><tr class="stop-subheader"><td ${this.colspan
-          }>${this.getSubheaderRow(item)}</td></tr><tr class="stop-subheader"><td ${this.colspan
-          }>${this.translate("STATION")}: ${item.parentStation.gtfsId.split(":").at(1)} • ${item.parentStation.name}</td></tr><tr class="stop-subheader"><td ${this.colspan
-          }>${this.translate("CLUSTER")}: ${item.cluster.gtfsId} • ${item.cluster.name}</td></tr><tr><td>&nbsp;</td></tr>`
+          }>${this.getSubheaderRow(
+            item
+          )}</td></tr><tr class="stop-subheader"><td ${this.colspan
+          }>${this.translate("STATION")}: ${item.parentStation.gtfsId
+            .split(":")
+            .at(1)} • ${item.parentStation.name
+          }</td></tr><tr class="stop-subheader"><td ${this.colspan
+          }>${this.translate("CLUSTER")}: ${item.cluster.gtfsId} • ${item.cluster.name
+          }</td></tr><tr><td>&nbsp;</td></tr>`
       )
       .reduce((p, c) => `${p}${c}`, "");
     return `${headerRow}${rows}`;
