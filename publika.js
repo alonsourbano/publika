@@ -1,3 +1,5 @@
+// Based on code from Sami Mäkinen (https://github.com/ZakarFin)
+
 Module.register("publika", {
   defaults: {
     stops: [],
