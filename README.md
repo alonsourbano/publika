@@ -10,18 +10,18 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 ## Functionalities
 
-- Can display several stops/stations based on configuration
+- Can display several stops, stations and/or clusters based on configuration
 - Displays stop code, platform/track and ticket zones
 - Supports english, finnish and swedish
 - Displays times in realtime when available
   - If not, it displays the scheduled departure using the `~` symbol, like HSL does. 
 - Amount of stops to display can be configured for all stops or individually
 - Displays alerts for services and stops/stations
-- Can display one stop or the whole station
-  - For example one train station has at least two stops, aka tracks. Some bus stations has several platforms
+- Can display one stop or the whole station or cluster
+  - For example, one train station has at least two stops, aka tracks. Some bus stations has several platforms
 - Can set a delay start to a stop
   - For example in the case the stop is a bit far, so services that start before the delay are not shown
-- Stop and station IDs can be searched directly with the module
+- Stop, station and cluster IDs can be searched directly with the module
 
 ## Dependencies
 
@@ -70,7 +70,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | --- | --- | --- | --- | --- | --- |
 | fontawesomeCode | no | `string` | `undefined` | Code for use Font Awesome's icons | `"aBc123"`
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3`
-| stops | yes | `array<string number StopObject>` | `undefined` | List of stops to display in the module | `[1020453]`
+| stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]`
 
 `stops` can be an array of string, number, `StopObject` or a mix of them:
 ```js
@@ -92,9 +92,9 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
-| id | yes | `number` | `undefined` | ID of the stop or station | `1020453`
+| id | yes | `number` | `undefined` | ID of the stop, station or cluster | `1020453`
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"`
-| type | no | `string` | `stop` | Only needed when using station, otherwise assumed to be a stop | `"station"`
+| type | no | `string` | `stop` | Only needed when using station or cluster, otherwise assumed to be a stop | `"station"`
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3`
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7`
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false`
