@@ -142,10 +142,13 @@ Module.register("publika", {
     var headerRow = `<tr class="stop-header"><th ${this.colspan
       }>${this.getHeaderRow(stop)}</th></tr><tr class="stop-subheader"><td ${this.colspan
       }>${this.getSubheaderRow(stop)}<td></tr>`;
-    var rows = this.getStopTimes(stop.stopTimes)
+    var rows = this.getSingleDimensionArray(stop.stopTimes, "ts")
       .map((item) => `<tr>${this.getRowForTimetable(item)}</tr>`)
       .reduce((p, c) => `${p}${c}`, "");
-    const stopAlerts = this.getAlerts(stop.alerts);
+    const stopAlerts = this.getSingleDimensionArray(
+      stop.alerts,
+      "effectiveStartDate"
+    );
     var alerts =
       stopAlerts.length > 0
         ? stopAlerts.map(
@@ -157,28 +160,16 @@ Module.register("publika", {
     return `${headerRow}${rows}${alerts}`;
   },
 
-  getStopTimes: function (stopTimes) {
-    if (stopTimes.length === 0) {
-      return stopTimes;
+  getSingleDimensionArray: function (items, sortKey) {
+    if (items.length === 0) {
+      return items;
     }
-    if (!Array.isArray(stopTimes.at(0))) {
-      return stopTimes;
+    if (!Array.isArray(items.at(0))) {
+      return items;
     }
-    return stopTimes
+    return items
       .reduce((p, c) => [...p, ...c], [])
-      .sort((a, b) => a.ts - b.ts);
-  },
-
-  getAlerts: function (alerts) {
-    if (alerts.length === 0) {
-      return alerts;
-    }
-    if (!Array.isArray(alerts.at(0))) {
-      return alerts;
-    }
-    return alerts
-      .reduce((p, c) => [...p, ...c], [])
-      .sort((a, b) => a.effectiveStartDate - b.effectiveStartDate);
+      .sort((a, b) => a[sortKey] - b[sortKey]);
   },
 
   getRowForTimetable: function (item) {
@@ -208,8 +199,8 @@ Module.register("publika", {
 
   getTableForStopSearch: function (stop) {
     var headerRow = `<tr class="stop-header"><th ${this.colspan}>${this.config.fontawesomeCode
-      ? '<i class="fa-solid fa-magnifying-glass"></i> '
-      : ""
+        ? '<i class="fa-solid fa-magnifying-glass"></i> '
+        : ""
       }${stop.stop}</th></tr>`;
     var rows = stop.stops
       .map(

@@ -62,7 +62,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 }
 ```
 
-### More configurations
+### Configuration options
 
 `config`:
 
@@ -98,3 +98,11 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3`
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7`
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false`
+
+## Glossary
+
+| Term | Explanation |
+| --- | --- |
+| Station | A location, which contains stops. For example, a train station is a station and its platforms are stops. |
+| Stop | A public transport stop, from which passengers can board vehicles. |
+| Cluster | A list of stops, grouped by name and proximity. |
