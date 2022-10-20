@@ -3,6 +3,7 @@ var moment = require("moment");
 const fetch = require("node-fetch");
 var NodeHelper = require("node_helper");
 const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
+const getHSLClusterTimesQuery = require("./HSL-graphiql/cluster-times");
 const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
 
 const nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
@@ -14,7 +15,7 @@ const headers = {
   Pragma: "no-cache"
 };
 
-function getSchedule(baseUrl, stop, count, successCb, errorCB) {
+function getStopSchedule(baseUrl, stop, count, successCb, errorCB) {
   fetch(baseUrl, {
     method: "POST",
     body: getHSLStopTimesQuery(
@@ -83,6 +84,50 @@ function getStopSearch(baseUrl, stop, successCb, errorCB) {
     });
 }
 
+function getClusterSchedule(baseUrl, stop, count, successCb, errorCB) {
+  fetch(baseUrl, {
+    method: "POST",
+    body: getHSLClusterTimesQuery(
+      stop.id || stop,
+      count,
+      moment().unix() + (stop.minutesFrom || 0) * 60
+    ),
+    headers: headers
+  })
+    .then(NodeHelper.checkFetchStatus)
+    .then((response) => response.json())
+    .then((json) => {
+      if (!json.data) {
+        errorCB("No data");
+        return;
+      }
+      const data = json.data.cluster;
+      if (!data) {
+        errorCB(`No cluster data for ${stop.id || stop}`);
+        return;
+      }
+      if (!(data.stops && data.stops.length > 0)) {
+        errorCB(`Cluster ${stop.id || stop} has no stop data`);
+        return;
+      }
+      const response = {
+        stopConfig: stop.id ? stop : undefined,
+        stop: stop.id || stop,
+        responseType: "TIMETABLE",
+        name: data.name,
+        vehicleMode: data.stops.map((item) => item.vehicleMode),
+        zoneId: data.stops.map((item) => item.zoneId),
+        alerts: data.stops.map((item) => item.alerts),
+        locationType: "CLUSTER",
+        stopTimes: data.stops.map((item) => processStopTimeData(item))
+      };
+      successCb(response);
+    })
+    .catch((error) => {
+      errorCB(error);
+    });
+}
+
 function processStopTimeData(json) {
   if (!json || json.length < 1) {
     return [];
@@ -109,6 +154,19 @@ function processStopTimeData(json) {
 const getUntil = (date) =>
   Math.floor(moment.duration(date.diff(moment())).asMinutes());
 
+var self = undefined;
+var selfConfig = undefined;
+
+const success = (data) => {
+  self.sendSocketNotification("TIMETABLE", data);
+  self.scheduleNextFetch(selfConfig.updateInterval);
+};
+
+const error = (err) => {
+  console.error(err);
+  self.scheduleNextFetch(selfConfig.retryDelay);
+};
+
 module.exports = NodeHelper.create({
   config: {},
   updateTimer: null,
@@ -124,37 +182,30 @@ module.exports = NodeHelper.create({
   },
 
   fetchTimetables() {
-    var self = this;
+    self = this;
+    selfConfig = this.config;
     this.config.stops.forEach((stop) => {
       if (stop.disabled) {
         return;
       }
       if (typeof stop === "string" && isNaN(stop)) {
-        return getStopSearch(
+        return getStopSearch(this.config.apiURL, stop, success, error);
+      }
+      if (stop.type === "cluster") {
+        return getClusterSchedule(
           this.config.apiURL,
           stop,
-          (data) => {
-            self.sendSocketNotification("TIMETABLE", data);
-            self.scheduleNextFetch(this.config.updateInterval);
-          },
-          (err) => {
-            console.error(err);
-            self.scheduleNextFetch(this.config.retryDelay);
-          }
+          stop.stopTimesCount ?? this.config.stopTimesCount,
+          success,
+          error
         );
       }
-      getSchedule(
+      getStopSchedule(
         this.config.apiURL,
         stop,
         stop.stopTimesCount ?? this.config.stopTimesCount,
-        (data) => {
-          self.sendSocketNotification("TIMETABLE", data);
-          self.scheduleNextFetch(this.config.updateInterval);
-        },
-        (err) => {
-          console.error(err);
-          self.scheduleNextFetch(this.config.retryDelay);
-        }
+        success,
+        error
       );
     });
   },

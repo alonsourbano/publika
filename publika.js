@@ -7,7 +7,7 @@ Module.register("publika", {
     fontawesomeCode: undefined,
 
     initialLoadDelay: 0 * 1000, // N seconds delay
-    updateInterval: 50 * 1000, // every N seconds
+    updateInterval: 20 * 1000, // every N seconds
     retryDelay: 50 * 1000, // every N seconds
 
     apiURL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
@@ -142,18 +142,34 @@ Module.register("publika", {
     var headerRow = `<tr class="stop-header"><th ${this.colspan
       }>${this.getHeaderRow(stop)}</th></tr><tr class="stop-subheader"><td ${this.colspan
       }>${this.getSubheaderRow(stop)}<td></tr>`;
-    var rows = stop.stopTimes
+    var rows = this.getSingleDimensionArray(stop.stopTimes, "ts")
       .map((item) => `<tr>${this.getRowForTimetable(item)}</tr>`)
       .reduce((p, c) => `${p}${c}`, "");
+    const stopAlerts = this.getSingleDimensionArray(
+      stop.alerts,
+      "effectiveStartDate"
+    );
     var alerts =
-      stop.alerts.length > 0
-        ? stop.alerts.map(
+      stopAlerts.length > 0
+        ? stopAlerts.map(
           (alert) =>
             `<tr><td ${this.colspan}>${this.getAlertIcon()} ${alert.alertHash
             }<td></tr>`
         )
         : "";
     return `${headerRow}${rows}${alerts}`;
+  },
+
+  getSingleDimensionArray: function (items, sortKey) {
+    if (items.length === 0) {
+      return items;
+    }
+    if (!Array.isArray(items.at(0))) {
+      return items;
+    }
+    return items
+      .reduce((p, c) => [...p, ...c], [])
+      .sort((a, b) => a[sortKey] - b[sortKey]);
   },
 
   getRowForTimetable: function (item) {
@@ -183,8 +199,8 @@ Module.register("publika", {
 
   getTableForStopSearch: function (stop) {
     var headerRow = `<tr class="stop-header"><th ${this.colspan}>${this.config.fontawesomeCode
-      ? '<i class="fa-solid fa-magnifying-glass"></i> '
-      : ""
+        ? '<i class="fa-solid fa-magnifying-glass"></i> '
+        : ""
       }${stop.stop}</th></tr>`;
     var rows = stop.stops
       .map(
@@ -225,15 +241,17 @@ Module.register("publika", {
 
   getSubheaderRow: function (stop) {
     const items =
-      stop.locationType === "STATION"
+      stop.locationType === "STOP"
         ? [
-          `<span class="stop-code">${this.translate("STATION")}</span>`,
-          `<span class="stop-zone">${stop.zoneId}</span>`
-        ]
-        : [
           stop.desc,
           `<span class="stop-code">${stop.code}</span>`,
           `<span class="stop-zone">${stop.zoneId}</span>`
+        ]
+        : [
+          `<span class="stop-code">${this.translate(
+            stop.locationType
+          )}</span>`,
+          this.getZoneId(stop.zoneId)
         ];
     if (stop.platformCode) {
       items.splice(
@@ -252,16 +270,30 @@ Module.register("publika", {
     return items.reduce((p, c) => `${p} ${c}`, "");
   },
 
-  getStopNameWithVehicleMode: function (item, includeId = undefined) {
-    const name = includeId ? `${includeId} • ${item.name}` : item.name;
-    return this.config.fontawesomeCode
-      ? `<i class="${this.getVehicleModeIcon(item.vehicleMode)}"></i> ${name}`
-      : `${name} (${this.translate(item.vehicleMode)})`;
+  getZoneId: function (zones) {
+    if (!Array.isArray(zones)) {
+      zones = [zones];
+    }
+    zones = [...new Set(zones)];
+    return zones
+      .map((zone) => `<span class="stop-zone">${zone}</span>`)
+      .reduce((p, c) => `${p}${c}`, "");
   },
 
-  getVehicleModeIcon: function (vehicleMode) {
+  getStopNameWithVehicleMode: function (item, includeId = undefined) {
+    const name = includeId ? `${includeId} • ${item.name}` : item.name;
+    if (!Array.isArray(item.vehicleMode)) {
+      item.vehicleMode = [item.vehicleMode];
+    }
+    item.vehicleMode = [...new Set(item.vehicleMode)];
+    return this.config.fontawesomeCode
+      ? `${this.getVehicleModeIcon(item.vehicleMode)} ${name}`
+      : `${name} (${this.getVehicleModeText(item.vehicleMode)})`;
+  },
+
+  getVehicleModeIcon: function (vehicleModes) {
     // Vehicle modes according to HSL documentation
-    return new Map([
+    const map = new Map([
       ["AIRPLANE", "fa-solid fa-plane-up"],
       ["BICYCLE", "fa-solid fa-bicycle"],
       ["BUS", "fa-solid fa-bus-simple"],
@@ -273,7 +305,16 @@ Module.register("publika", {
       ["RAIL", "fa-solid fa-train"],
       ["SUBWAY", "fa-solid fa-m"],
       ["TRAM", "fa-solid fa-train-tram"]
-    ]).get(vehicleMode);
+    ]);
+    return vehicleModes
+      .map((mode) => `<i class="${map.get(mode)}"></i>`)
+      .reduce((p, c) => `${p}${c}`, "");
+  },
+
+  getVehicleModeText: function (vehicleModes) {
+    return vehicleModes
+      .map((mode) => this.translate(mode))
+      .reduce((p, c) => `${p}, ${c}`, "");
   },
 
   getAlertIcon: function () {
@@ -282,9 +323,9 @@ Module.register("publika", {
       : "!!!";
   },
 
-  getPlatformText: function (vehicleMode) {
+  getPlatformText: function (vehicleModes) {
     const defaultText = this.translate("PLATFORM");
-    return new Map([
+    const map = new Map([
       ["AIRPLANE", defaultText],
       ["BICYCLE", defaultText],
       ["BUS", defaultText],
@@ -296,6 +337,9 @@ Module.register("publika", {
       ["RAIL", this.translate("TRACK")],
       ["SUBWAY", this.translate("TRACK")],
       ["TRAM", defaultText]
-    ]).get(vehicleMode);
+    ]);
+    return vehicleModes
+      .map((mode) => map.get(mode))
+      .reduce((p, c) => `${p}${c}`, "");
   }
 });
