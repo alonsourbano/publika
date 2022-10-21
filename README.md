@@ -69,6 +69,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
 | fontawesomeCode | no | `string` | `undefined` | Code for use Font Awesome's icons | `"aBc123"`
+| hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023 | `"abc123def456ghi789"`
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3`
 | stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]`
 
