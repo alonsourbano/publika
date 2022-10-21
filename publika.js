@@ -106,13 +106,9 @@ Module.register("publika", {
   },
 
   getScripts: function () {
-    const scripts = [];
-    if (this.config.fontawesomeCode) {
-      scripts.push(
-        `https://kit.fontawesome.com/${this.config.fontawesomeCode}.js`
-      );
-    }
-    return scripts;
+    return this.config.fontawesomeCode
+      ? [`https://kit.fontawesome.com/${this.config.fontawesomeCode}.js`]
+      : [];
   },
 
   getStyles: function () {
