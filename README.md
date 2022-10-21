@@ -28,8 +28,6 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - DigiTransit (**required**, free): https://digitransit.fi/en/developers/
   - Used for fetching timetables and searching for stops and stations
   - Note: For now no API key is needed, but this would change in the future (april 2023)
-- Font Awesome (*optional*, free): https://fontawesome.com/start
-  - Used for displaying icons. Not needed, but it enhances the user experience
 
 ## Other screenshots
 - Single stop view:
@@ -57,7 +55,6 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
   config: {
     stops: [1000105],
     stopTimesCount: 5,
-    fontawesomeCode: "OPTIONAL (Check dependencies)",
   }
 }
 ```
@@ -68,10 +65,9 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
-| fontawesomeCode | no | `string` | `undefined` | Code for use Font Awesome's icons | `"aBc123"`
-| hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023 | `"abc123def456ghi789"`
-| stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3`
-| stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]`
+| hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023 | `"abc123def456ghi789"` |
+| stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
+| stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]` |
 
 `stops` can be an array of string, number, `StopObject` or a mix of them:
 ```js
@@ -93,12 +89,12 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
-| id | yes | `number` | `undefined` | ID of the stop, station or cluster | `1020453`
-| name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"`
-| type | no | `string` | `stop` | Only needed when using station or cluster, otherwise assumed to be a stop | `"station"`
-| minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3`
-| stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7`
-| disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false`
+| id | yes | `number` | `undefined` | ID of the stop, station or cluster | `1020453` |
+| name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
+| type | no | `string` | `stop` | Only needed when using station or cluster, otherwise assumed to be a stop | `"station"` |
+| minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
+| stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
+| disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false` |
 
 ## Glossary
 
