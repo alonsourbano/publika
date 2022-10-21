@@ -4,7 +4,6 @@ Module.register("publika", {
   defaults: {
     stops: [],
     stopTimesCount: 5,
-    fontawesomeCode: undefined,
     hslApiKey: undefined,
 
     initialLoadDelay: 0 * 1000, // N seconds delay
@@ -105,12 +104,6 @@ Module.register("publika", {
     };
   },
 
-  getScripts: function () {
-    return this.config.fontawesomeCode
-      ? [`https://kit.fontawesome.com/${this.config.fontawesomeCode}.js`]
-      : [];
-  },
-
   getStyles: function () {
     return [this.file(`${this.name}.css`)];
   },
@@ -209,8 +202,7 @@ Module.register("publika", {
       stopAlerts.length > 0
         ? stopAlerts.map(
           (alert) =>
-            `<tr><td ${this.colspan}>${this.getAlertIcon()} ${alert.alertHash
-            }<td></tr>`
+            `<tr><td ${this.colspan}><i class="fa-solid fa-triangle-exclamation"></i> ${alert.alertHash}<td></tr>`
         )
         : "";
     return `${headerRow}${rows}${alerts}`;
@@ -249,15 +241,12 @@ Module.register("publika", {
       ? item.headsign.split(" via ").at(0)
       : item.headsign;
     return item.alerts.length > 0
-      ? `${this.getAlertIcon()} ${headsign}`
+      ? `<i class="fa-solid fa-triangle-exclamation"></i> ${headsign}`
       : headsign;
   },
 
   getTableForStopSearch: function (stop) {
-    var headerRow = `<tr class="stop-header"><th ${this.colspan}>${this.config.fontawesomeCode
-      ? '<i class="fa-solid fa-magnifying-glass"></i> '
-      : ""
-      }${stop.stop}</th></tr>`;
+    var headerRow = `<tr class="stop-header"><th ${this.colspan}><i class="fa-solid fa-magnifying-glass"></i> ${stop.stop}</th></tr>`;
     var rows = stop.stops
       .map(
         (item) =>
@@ -346,9 +335,7 @@ Module.register("publika", {
       item.vehicleMode = [item.vehicleMode];
     }
     item.vehicleMode = [...new Set(item.vehicleMode)];
-    return this.config.fontawesomeCode
-      ? `${this.getVehicleModeIcon(item.vehicleMode)} ${name}`
-      : `${name} (${this.getVehicleModeText(item.vehicleMode)})`;
+    return `${this.getVehicleModeIcon(item.vehicleMode)} ${name}`;
   },
 
   getVehicleModeIcon: function (vehicleModes) {
@@ -369,16 +356,6 @@ Module.register("publika", {
     return vehicleModes
       .map((mode) => `<i class="${map.get(mode)}"></i>`)
       .reduce((p, c) => `${p}${c}`, "");
-  },
-
-  getVehicleModeText: function (vehicleModes) {
-    return vehicleModes.map((mode) => this.translate(mode)).join(", ");
-  },
-
-  getAlertIcon: function () {
-    return this.config.fontawesomeCode
-      ? '<i class="fa-solid fa-triangle-exclamation"></i>'
-      : "!!!";
   },
 
   getPlatformText: function (vehicleModes) {
