@@ -95,14 +95,13 @@ function getStopSearch(baseUrl, stop, successCb, errorCB) {
 }
 
 function getClusterSchedule(baseUrl, stop, count, successCb, errorCB) {
-  const query = getHSLClusterTimesQuery(
-    stop.id,
-    count,
-    moment().unix() + (stop.minutesFrom || 0) * 60
-  );
   fetch(baseUrl, {
     method: "POST",
-    body: query,
+    body: getHSLClusterTimesQuery(
+      stop.id,
+      count,
+      moment().unix() + (stop.minutesFrom || 0) * 60
+    ),
     headers: getHeaders()
   })
     .then(NodeHelper.checkFetchStatus)
