@@ -5,6 +5,7 @@ Module.register("publika", {
     stops: [],
     stopTimesCount: 5,
     fontawesomeCode: undefined,
+    hslApiKey: undefined,
 
     initialLoadDelay: 0 * 1000, // N seconds delay
     updateInterval: 20 * 1000, // every N seconds
@@ -15,7 +16,10 @@ Module.register("publika", {
     timetableClass: "timetable"
   },
 
+  notifications: [],
   timeTable: [],
+  colspan: 'colspan="4"',
+  apiKeyDeadLine: undefined,
 
   notificationReceived: function (notification, payload, sender) {
     if (sender) {
@@ -29,20 +33,64 @@ Module.register("publika", {
       Log.log(`${this.name} received a module notification: ${notification}`);
       Log.log(payload);
     }
-    if (notification === "DOM_OBJECTS_CREATED") {
-      this.sendSocketNotification("CONFIG", this.config);
+    if (notification === "ALL_MODULES_STARTED") {
+      this.onAllModulesStarted();
+    } else if (notification === "DOM_OBJECTS_CREATED") {
+      this.onDomObjectsCreated();
     }
   },
 
   socketNotificationReceived: function (notification, payload) {
-    if (notification === "TIMETABLE") {
+    if (notification === "PUBLIKA:TIMETABLE") {
       const index = this.timeTable.findIndex(
         (stop) => stop.stop === payload.stop
       );
       this.timeTable[index] = payload;
       this.loaded = true;
       this.updateDom();
+    } else if (notification === "PUBLIKA:NOTIFICATION") {
+      if (!this.config.hslApiKey) {
+        const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
+        const alertModuleAvailable = MM.getModules().some(
+          (module) => module.name === "alert" && !module.hidden
+        );
+        if (alertModuleAvailable) {
+          this.sendNotification("SHOW_ALERT", payload);
+          if (deadLined) {
+            this.notifications.push(payload);
+          }
+        } else {
+          this.notifications.push(payload);
+          setTimeout(() => {
+            this.notifications = this.notifications.filter(
+              (item) => item.id !== payload.id
+            );
+            this.updateDom();
+          }, payload.timer);
+          this.updateDom();
+        }
+      }
     }
+  },
+
+  onAllModulesStarted: function () {
+    if (!this.config.hslApiKey) {
+      this.apiKeyDeadLine = moment("20230403", "YYYYMMDD");
+      const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
+      const hslNotification = {
+        title: "Module publika (HSL timetables)",
+        type: deadLined ? "" : "notification",
+        message: `Starting from ${this.apiKeyDeadLine.format(
+          "LL"
+        )}, the use of the Digitransit APIs will require registration and use of API keys. Registration can be done at the Digitransit API portal.`,
+        timer: (deadLined ? 20 : 10) * 1000
+      };
+      this.sendSocketNotification("PUBLIKA:NOTIFICATION", hslNotification);
+    }
+  },
+
+  onDomObjectsCreated: function () {
+    this.sendSocketNotification("PUBLIKA:CONFIG", this.config);
   },
 
   getStops: function () {
@@ -67,28 +115,20 @@ Module.register("publika", {
     return [this.file(`${this.name}.css`)];
   },
 
-  getTimeTable: function (stop) {
-    // stop might be object with id and name
-    var id = stop.id || stop;
-    if (typeof id !== "number" && typeof id !== "string") {
-      return null;
-    }
-    var details = this.timeTable[id];
-    if (!details) {
-      return null;
-    }
-    return details;
+  getTimeTable: function (index) {
+    return this.timeTable.at(index);
   },
 
   start: function () {
-    Log.info("Starting module: " + this.name);
-    this.config.stops.forEach((stop) => {
-      this.timeTable.push({
-        stop: stop.id ?? stop,
-        empty: true,
-        disabled: stop.disabled
+    Log.info(`Starting module: ${this.name}`);
+    this.config.stops
+      .filter((stop) => !stop.disabled)
+      .forEach((stop) => {
+        this.timeTable.push({
+          stop: stop.id ?? stop,
+          empty: true
+        });
       });
-    });
   },
 
   getDom: function () {
@@ -110,14 +150,25 @@ Module.register("publika", {
     large.className = "light small " + this.config.timetableClass;
     var htmlElements = this.getStops()
       .map((stop) => this.getTable(this.getTimeTable(stop)))
-      .reduce((p, c) => `${p}<tr><td>&nbsp;</td></tr>${c}`, "<table>");
-    large.innerHTML = `${htmlElements}</table>`;
+      .join('<tr><td title="getDom">&nbsp;</td></tr>');
+    large.innerHTML = `${this.getNotifications()}<table>${htmlElements}</table>`;
     wrapper.appendChild(large);
 
     return wrapper;
   },
 
-  colspan: "colspan=4",
+  getNotifications: function () {
+    if (this.notifications.length === 0) {
+      return "";
+    }
+    const notifications = this.notifications
+      .map(
+        (notification) =>
+          `<tr><td colspan="${this.colspan}">${notification.message}</td></tr>`
+      )
+      .reduce((p, c) => `${p}${c}`, "");
+    return `<div class="notification"><table>${notifications}</table></div>`;
+  },
 
   getTable: function (stop) {
     if (!stop) {
@@ -143,7 +194,12 @@ Module.register("publika", {
       }>${this.getHeaderRow(stop)}</th></tr><tr class="stop-subheader"><td ${this.colspan
       }>${this.getSubheaderRow(stop)}<td></tr>`;
     var rows = this.getSingleDimensionArray(stop.stopTimes, "ts")
-      .map((item) => `<tr>${this.getRowForTimetable(item)}</tr>`)
+      .map(
+        (item) =>
+          `<tr${item.until > 0 ? "" : ' class="now"'}>${this.getRowForTimetable(
+            item
+          )}</tr>`
+      )
       .reduce((p, c) => `${p}${c}`, "");
     const stopAlerts = this.getSingleDimensionArray(
       stop.alerts,
@@ -199,8 +255,8 @@ Module.register("publika", {
 
   getTableForStopSearch: function (stop) {
     var headerRow = `<tr class="stop-header"><th ${this.colspan}>${this.config.fontawesomeCode
-        ? '<i class="fa-solid fa-magnifying-glass"></i> '
-        : ""
+      ? '<i class="fa-solid fa-magnifying-glass"></i> '
+      : ""
       }${stop.stop}</th></tr>`;
     var rows = stop.stops
       .map(
@@ -217,9 +273,13 @@ Module.register("publika", {
             .at(1)} • ${item.parentStation.name
           }</td></tr><tr class="stop-subheader"><td ${this.colspan
           }>${this.translate("CLUSTER")}: ${item.cluster.gtfsId} • ${item.cluster.name
-          }</td></tr><tr><td>&nbsp;</td></tr>`
+          }</td></tr>`
       )
-      .reduce((p, c) => `${p}${c}`, "");
+      .reduce(
+        (p, c) =>
+          `${p}<tr><td title="getTableForStopSearch">&nbsp;</td></tr>${c}`,
+        ""
+      );
     return `${headerRow}${rows}`;
   },
 
@@ -312,9 +372,7 @@ Module.register("publika", {
   },
 
   getVehicleModeText: function (vehicleModes) {
-    return vehicleModes
-      .map((mode) => this.translate(mode))
-      .reduce((p, c) => `${p}, ${c}`, "");
+    return vehicleModes.map((mode) => this.translate(mode)).join(", ");
   },
 
   getAlertIcon: function () {

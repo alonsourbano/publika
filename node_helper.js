@@ -1,19 +1,29 @@
 /* eslint-disable jsdoc/require-jsdoc */
-var moment = require("moment");
+const moment = require("moment");
 const fetch = require("node-fetch");
-var NodeHelper = require("node_helper");
+const NodeHelper = require("node_helper");
 const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
 const getHSLClusterTimesQuery = require("./HSL-graphiql/cluster-times");
 const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
+const Log = require("logger");
+const { v4: uuidv4 } = require("uuid");
 
-const nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
-const headers = {
-  "Content-Type": "application/graphql",
-  "User-Agent":
-    "Mozilla/5.0 (Node.js " + nodeVersion + ") MagicMirror/" + global.version,
-  "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
-  Pragma: "no-cache"
-};
+var self = undefined;
+var selfConfig = undefined;
+
+function getHeaders() {
+  return {
+    "Content-Type": "application/graphql",
+    "User-Agent":
+      "Mozilla/5.0 (Node.js " +
+      Number(process.version.match(/^v(\d+\.\d+)/)[1]) +
+      ") MagicMirror/" +
+      global.version,
+    "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
+    "digitransit-subscription-key": selfConfig.hslApiKey,
+    Pragma: "no-cache"
+  };
+}
 
 function getStopSchedule(baseUrl, stop, count, successCb, errorCB) {
   fetch(baseUrl, {
@@ -24,7 +34,7 @@ function getStopSchedule(baseUrl, stop, count, successCb, errorCB) {
       count,
       moment().unix() + (stop.minutesFrom || 0) * 60
     ),
-    headers: headers
+    headers: getHeaders()
   })
     .then(NodeHelper.checkFetchStatus)
     .then((response) => response.json())
@@ -63,7 +73,7 @@ function getStopSearch(baseUrl, stop, successCb, errorCB) {
   fetch(baseUrl, {
     method: "POST",
     body: getHSLStopSearchQuery(stop),
-    headers: headers
+    headers: getHeaders()
   })
     .then(NodeHelper.checkFetchStatus)
     .then((response) => response.json())
@@ -88,11 +98,11 @@ function getClusterSchedule(baseUrl, stop, count, successCb, errorCB) {
   fetch(baseUrl, {
     method: "POST",
     body: getHSLClusterTimesQuery(
-      stop.id || stop,
+      stop.id,
       count,
       moment().unix() + (stop.minutesFrom || 0) * 60
     ),
-    headers: headers
+    headers: getHeaders()
   })
     .then(NodeHelper.checkFetchStatus)
     .then((response) => response.json())
@@ -103,16 +113,16 @@ function getClusterSchedule(baseUrl, stop, count, successCb, errorCB) {
       }
       const data = json.data.cluster;
       if (!data) {
-        errorCB(`No cluster data for ${stop.id || stop}`);
+        errorCB(`No cluster data for ${stop.id}`);
         return;
       }
       if (!(data.stops && data.stops.length > 0)) {
-        errorCB(`Cluster ${stop.id || stop} has no stop data`);
+        errorCB(`Cluster ${stop.id} has no stop data`);
         return;
       }
       const response = {
-        stopConfig: stop.id ? stop : undefined,
-        stop: stop.id || stop,
+        stopConfig: stop,
+        stop: stop.id,
         responseType: "TIMETABLE",
         name: data.name,
         vehicleMode: data.stops.map((item) => item.vehicleMode),
@@ -134,7 +144,6 @@ function processStopTimeData(json) {
   }
   let times = [];
   json.stoptimesWithoutPatterns.forEach((value) => {
-    // times in seconds so multiple by 1000 for ms
     let datVal = new Date((value.serviceDay + value.realtimeDeparture) * 1000);
     const date = moment(datVal);
     const stopTime = {
@@ -152,18 +161,15 @@ function processStopTimeData(json) {
 }
 
 const getUntil = (date) =>
-  Math.floor(moment.duration(date.diff(moment())).asMinutes());
-
-var self = undefined;
-var selfConfig = undefined;
+  Math.round(moment.duration(date.diff(moment())).asMinutes());
 
 const success = (data) => {
-  self.sendSocketNotification("TIMETABLE", data);
+  self.sendSocketNotification("PUBLIKA:TIMETABLE", data);
   self.scheduleNextFetch(selfConfig.updateInterval);
 };
 
 const error = (err) => {
-  console.error(err);
+  Log.error(err);
   self.scheduleNextFetch(selfConfig.retryDelay);
 };
 
@@ -175,9 +181,12 @@ module.exports = NodeHelper.create({
   },
 
   socketNotificationReceived: function (notification, payload) {
-    if (notification === "CONFIG") {
+    if (notification === "PUBLIKA:CONFIG") {
       this.config = payload;
       this.scheduleNextFetch(this.config.initialLoadDelay);
+    } else if (notification === "PUBLIKA:NOTIFICATION") {
+      payload.id = uuidv4();
+      this.sendSocketNotification("PUBLIKA:NOTIFICATION", payload);
     }
   },
 
@@ -215,7 +224,7 @@ module.exports = NodeHelper.create({
       delay = 60 * 1000;
     }
 
-    var self = this;
+    const self = this;
     clearTimeout(this.updateTimer);
     this.updateTimer = setTimeout(function () {
       self.fetchTimetables();
