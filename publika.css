@@ -35,3 +35,23 @@
 .publika table .minutes-from {
   float: right;
 }
+
+.publika .notification {
+  float: right;
+  position: absolute;
+  background-color: black;
+  border: 1px solid;
+  border-radius: 5px;
+  padding: 5px;
+  margin-bottom: 30px;
+}
+
+.publika .now {
+  animation: blinker 2s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
