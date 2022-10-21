@@ -9,10 +9,9 @@ Module.register("publika", {
     initialLoadDelay: 0 * 1000, // N seconds delay
     updateInterval: 20 * 1000, // every N seconds
     retryDelay: 50 * 1000, // every N seconds
-
     apiURL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
-
-    timetableClass: "timetable"
+    timetableClass: "timetable",
+    timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a"
   },
 
   notifications: [],
@@ -225,7 +224,7 @@ Module.register("publika", {
       item.line,
       this.getHeadsign(item),
       { value: this.getUntilText(item), style: "time smaller" },
-      { value: item.time, style: "time" }
+      { value: moment(item.time).format(this.config.timeFormat), style: "time" }
     ];
     return columns
       .map(
