@@ -336,11 +336,21 @@ Module.register("publika", {
       .reduce((p, c) => `${p}${c}`, "");
   },
 
-  getHeadsign: function (data) {
-    const headsign = data.headsign?.includes(" via ")
-      ? data.headsign.split(" via ").at(0)
-      : data.headsign;
-    return data.alerts.length > 0
+  getHeadsign: function (item) {
+    console.log(item.stopConfig);
+    const fullHeadsign =
+      typeof item.stopConfig?.fullHeadsign === "undefined"
+        ? this.config.fullHeadsign
+        : item.stopConfig?.fullHeadsign;
+    console.log(
+      typeof item.stopConfig?.fullHeadsign === "undefined",
+      fullHeadsign
+    );
+    const headsign =
+      item.headsign?.includes(" via ") && !item.stopConfig?.fullHeadsign
+        ? item.headsign.split(" via ").at(0)
+        : item.headsign;
+    return item.alerts.length > 0
       ? `<i class="fa-solid fa-triangle-exclamation"></i> ${headsign}`
       : headsign;
   },
