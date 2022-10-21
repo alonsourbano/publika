@@ -150,7 +150,7 @@ function processStopTimeData(json) {
       line: value.trip.routeShortName,
       headsign: value.headsign,
       alerts: value.trip.alerts,
-      time: date.format("H:mm"),
+      time: date,
       realtime: value.realtime,
       until: getUntil(date),
       ts: datVal.getTime()
