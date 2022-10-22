@@ -4,6 +4,7 @@ Module.register("publika", {
   defaults: {
     stops: [],
     stopTimesCount: 5,
+    fullHeadsign: false,
     hslApiKey: undefined,
 
     updateInterval: 20 * 1000, // every N seconds
