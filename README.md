@@ -67,6 +67,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | --- | --- | --- | --- | --- | --- |
 | hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023 | `"abc123def456ghi789"` |
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
+| fullHeadsign | no | `boolean` | `false` | Show complete headsign for all stops. For example: Töölön halli via Kallio | `true` |
 | stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]` |
 
 `stops` can be an array of string, number, `StopObject` or a mix of them:
@@ -94,6 +95,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | type | no | `string` | `stop` | Only needed when using station or cluster, otherwise assumed to be a stop | `"station"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
+| fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false` |
 
 ## Glossary
