@@ -6,47 +6,125 @@ Module.register("publika", {
     stopTimesCount: 5,
     hslApiKey: undefined,
 
-    initialLoadDelay: 0 * 1000, // N seconds delay
     updateInterval: 20 * 1000, // every N seconds
-    retryDelay: 50 * 1000, // every N seconds
-    apiURL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
+    retryInterval: 45 * 1000, // every N seconds
+    digitransitApiUrl:
+      "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
     timetableClass: "timetable",
     timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a"
   },
 
   notifications: [],
-  timeTable: [],
+  stoptimes: [],
   colspan: 'colspan="4"',
   apiKeyDeadLine: undefined,
 
   notificationReceived: function (notification, payload, sender) {
-    if (sender) {
-      if (sender.name !== "clock") {
-        Log.log(
-          `${this.name} received a module notification: ${notification} from sender: ${sender.name}`
-        );
-        Log.log(payload);
-      }
-    } else {
-      Log.log(`${this.name} received a module notification: ${notification}`);
-      Log.log(payload);
-    }
     if (notification === "ALL_MODULES_STARTED") {
-      this.onAllModulesStarted();
-    } else if (notification === "DOM_OBJECTS_CREATED") {
-      this.onDomObjectsCreated();
+      return this.onAllModulesStarted();
     }
+    if (notification === "DOM_OBJECTS_CREATED") {
+      return this.onDomObjectsCreated();
+    }
+    if (sender?.name === "clock") {
+      return;
+    }
+
+    Log.warn(`Unhandled notification ${notification}`, payload, sender);
   },
 
   socketNotificationReceived: function (notification, payload) {
-    if (notification === "PUBLIKA:TIMETABLE") {
-      const index = this.timeTable.findIndex(
-        (stop) => stop.stop === payload.stop
-      );
-      this.timeTable[index] = payload;
+    const self = this;
+    const notifications = {
+      FETCH_CLUSTER_STOPTIMES: "FETCH_CLUSTER_STOPTIMES",
+      FETCH_STOP_STOPTIMES: "FETCH_STOP_STOPTIMES",
+      NOTIFICATION: "NOTIFICATION",
+      READY: "READY",
+      REJECT_CLUSTER_STOPTIMES: "REJECT_CLUSTER_STOPTIMES",
+      REJECT_SEARCH_STOP: "REJECT_SEARCH_STOP",
+      REJECT_STOP_STOPTIMES: "REJECT_STOP_STOPTIMES",
+      RESOLVE_CLUSTER_STOPTIMES: "RESOLVE_CLUSTER_STOPTIMES",
+      RESOLVE_SEARCH_STOP: "RESOLVE_SEARCH_STOP",
+      RESOLVE_STOP_STOPTIMES: "RESOLVE_STOP_STOPTIMES",
+      SEARCH_STOP: "SEARCH_STOP"
+    };
+    if (notification === notifications.READY) {
       this.loaded = true;
-      this.updateDom();
-    } else if (notification === "PUBLIKA:NOTIFICATION") {
+      return this.config.stops
+        .filter((stop) => !stop.disabled)
+        .forEach((stop) => {
+          const normalizedStop = {
+            id: stop.id ?? stop,
+            stopTimesCount: stop.stopTimesCount ?? this.config.stopTimesCount,
+            ...stop
+          };
+          if (stop.type === "cluster") {
+            return this.sendSocketNotification(
+              notifications.FETCH_CLUSTER_STOPTIMES,
+              normalizedStop
+            );
+          }
+          if (typeof stop === "string" && isNaN(stop)) {
+            return this.sendSocketNotification(
+              notifications.SEARCH_STOP,
+              normalizedStop
+            );
+          }
+          return this.sendSocketNotification(
+            notifications.FETCH_STOP_STOPTIMES,
+            normalizedStop
+          );
+        });
+    }
+
+    const { data, ...stop } = payload;
+
+    if (notification === notifications.RESOLVE_SEARCH_STOP) {
+      return this.updateStoptime(payload);
+    }
+
+    if (notification === notifications.REJECT_SEARCH_STOP) {
+      setTimeout(() => {
+        self.sendSocketNotification(notifications.SEARCH_STOP, stop);
+      }, this.config.retryInterval);
+      return this.rejectStoptime(payload.id);
+    }
+
+    if (notification === notifications.RESOLVE_CLUSTER_STOPTIMES) {
+      setTimeout(() => {
+        self.sendSocketNotification(
+          notifications.FETCH_CLUSTER_STOPTIMES,
+          stop
+        );
+      }, this.config.updateInterval);
+      return this.updateStoptime(payload);
+    }
+
+    if (notification === notifications.REJECT_CLUSTER_STOPTIMES) {
+      setTimeout(() => {
+        self.sendSocketNotification(
+          notifications.FETCH_CLUSTER_STOPTIMES,
+          stop
+        );
+      }, this.config.retryInterval);
+      return this.rejectStoptime(payload.id);
+    }
+
+    if (notification === notifications.RESOLVE_STOP_STOPTIMES) {
+      setTimeout(() => {
+        self.sendSocketNotification(notifications.FETCH_STOP_STOPTIMES, stop);
+      }, this.config.updateInterval);
+      return this.updateStoptime(payload);
+    }
+
+    if (notification === notifications.REJECT_STOP_STOPTIMES) {
+      setTimeout(() => {
+        self.sendSocketNotification(notifications.FETCH_STOP_STOPTIMES, stop);
+      }, this.config.retryInterval);
+      return this.rejectStoptime(payload.id);
+    }
+
+    if (notification === notifications.NOTIFICATION) {
       if (!this.config.hslApiKey) {
         const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
         const alertModuleAvailable = MM.getModules().some(
@@ -68,7 +146,11 @@ Module.register("publika", {
           this.updateDom();
         }
       }
+      return;
     }
+
+    Log.error(`Unhandled socket notification ${notification}`, payload);
+    throw Error(`Unhandled socket notification ${notification}`);
   },
 
   onAllModulesStarted: function () {
@@ -77,22 +159,41 @@ Module.register("publika", {
       const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
       const hslNotification = {
         title: "Module publika (HSL timetables)",
-        type: deadLined ? "" : "notification",
+        type: deadLined ? undefined : "notification",
         message: `Starting from ${this.apiKeyDeadLine.format(
           "LL"
         )}, the use of the Digitransit APIs will require registration and use of API keys. Registration can be done at the Digitransit API portal.`,
         timer: (deadLined ? 20 : 10) * 1000
       };
-      this.sendSocketNotification("PUBLIKA:NOTIFICATION", hslNotification);
+      this.sendSocketNotification("NOTIFICATION", hslNotification);
     }
   },
 
   onDomObjectsCreated: function () {
-    this.sendSocketNotification("PUBLIKA:CONFIG", this.config);
+    this.sendSocketNotification("INIT", {
+      digiTransit: {
+        subscriptionKey: this.config.hslApiKey,
+        apiUrl: this.config.digitransitApiUrl
+      }
+    });
+  },
+
+  updateStoptime: function (payload) {
+    const index = this.stoptimes.findIndex(
+      (stoptime) => stoptime.id === payload.id
+    );
+    this.stoptimes[index] = payload;
+    this.updateDom();
+  },
+
+  rejectStoptime: function (id) {
+    const index = this.stoptimes.findIndex((stoptime) => stoptime.id === id);
+    this.stoptimes[index].data = { error: true };
+    this.updateDom();
   },
 
   getStops: function () {
-    return Object.keys(this.timeTable) || [];
+    return Object.keys(this.stoptimes) || [];
   },
 
   getTranslations: function () {
@@ -108,7 +209,7 @@ Module.register("publika", {
   },
 
   getTimeTable: function (index) {
-    return this.timeTable.at(index);
+    return this.stoptimes.at(index);
   },
 
   start: function () {
@@ -116,9 +217,9 @@ Module.register("publika", {
     this.config.stops
       .filter((stop) => !stop.disabled)
       .forEach((stop) => {
-        this.timeTable.push({
-          stop: stop.id ?? stop,
-          empty: true
+        this.stoptimes.push({
+          id: stop.id ?? stop,
+          data: { empty: true }
         });
       });
   },
@@ -169,23 +270,23 @@ Module.register("publika", {
     if (stop.disabled) {
       return "";
     }
-    if (stop.empty) {
-      return `<tr class="stop-header"><th ${this.colspan}>HSL:${stop.stop
-        }</th></tr><tr><td ${this.colspan}>${this.translate(
-          "LOADING"
-        )}</td></tr>`;
+    if (stop.data?.empty || stop.data?.error) {
+      return `<tr class="stop-header"><th ${this.colspan}>HSL:${stop.id
+        }</th></tr><tr><td ${this.colspan}>${stop.data?.error
+          ? '<i class="fa-solid fa-xmark"></i> '
+          : '<i class="fa-solid fa-spinner"></i> '
+        }${this.translate(stop.data?.error ? "ERROR" : "LOADING")}</td></tr>`;
     }
-    if (stop.responseType === "TIMETABLE") {
-      return this.getTableForTimetable(stop);
-    }
-    return this.getTableForStopSearch(stop);
+    return stop.data.responseType === "STOP_SEARCH"
+      ? this.getTableForStopSearch(stop)
+      : this.getTableForTimetable(stop);
   },
 
   getTableForTimetable: function (stop) {
     var headerRow = `<tr class="stop-header"><th ${this.colspan
       }>${this.getHeaderRow(stop)}</th></tr><tr class="stop-subheader"><td ${this.colspan
-      }>${this.getSubheaderRow(stop)}<td></tr>`;
-    var rows = this.getSingleDimensionArray(stop.stopTimes, "ts")
+      }>${this.getSubheaderRow(stop.data, stop.minutesFrom)}<td></tr>`;
+    var rows = this.getSingleDimensionArray(stop.data.stopTimes, "ts")
       .map(
         (item) =>
           `<tr${item.until > 0 ? "" : ' class="now"'}>${this.getRowForTimetable(
@@ -194,7 +295,7 @@ Module.register("publika", {
       )
       .reduce((p, c) => `${p}${c}`, "");
     const stopAlerts = this.getSingleDimensionArray(
-      stop.alerts,
+      stop.data.alerts,
       "effectiveStartDate"
     );
     var alerts =
@@ -219,12 +320,12 @@ Module.register("publika", {
       .sort((a, b) => a[sortKey] - b[sortKey]);
   },
 
-  getRowForTimetable: function (item) {
+  getRowForTimetable: function (data) {
     const columns = [
-      item.line,
-      this.getHeadsign(item),
-      { value: this.getUntilText(item), style: "time smaller" },
-      { value: moment(item.time).format(this.config.timeFormat), style: "time" }
+      data.line,
+      this.getHeadsign(data),
+      { value: this.getUntilText(data), style: "time smaller" },
+      { value: moment(data.time).format(this.config.timeFormat), style: "time" }
     ];
     return columns
       .map(
@@ -235,39 +336,40 @@ Module.register("publika", {
       .reduce((p, c) => `${p}${c}`, "");
   },
 
-  getHeadsign: function (item) {
-    const headsign = item.headsign?.includes(" via ")
-      ? item.headsign.split(" via ").at(0)
-      : item.headsign;
-    return item.alerts.length > 0
+  getHeadsign: function (data) {
+    const headsign = data.headsign?.includes(" via ")
+      ? data.headsign.split(" via ").at(0)
+      : data.headsign;
+    return data.alerts.length > 0
       ? `<i class="fa-solid fa-triangle-exclamation"></i> ${headsign}`
       : headsign;
   },
 
   getTableForStopSearch: function (stop) {
-    var headerRow = `<tr class="stop-header"><th ${this.colspan}><i class="fa-solid fa-magnifying-glass"></i> ${stop.stop}</th></tr>`;
-    var rows = stop.stops
-      .map(
-        (item) =>
-          `<tr><td ${this.colspan}>${this.getStopNameWithVehicleMode(
-            item,
-            item.gtfsId.split(":").at(1)
-          )}</td></tr><tr class="stop-subheader"><td ${this.colspan
-          }>${this.getSubheaderRow(
-            item
-          )}</td></tr><tr class="stop-subheader"><td ${this.colspan
-          }>${this.translate("STATION")}: ${item.parentStation.gtfsId
-            .split(":")
-            .at(1)} • ${item.parentStation.name
-          }</td></tr><tr class="stop-subheader"><td ${this.colspan
-          }>${this.translate("CLUSTER")}: ${item.cluster.gtfsId} • ${item.cluster.name
-          }</td></tr>`
-      )
-      .reduce(
-        (p, c) =>
-          `${p}<tr><td title="getTableForStopSearch">&nbsp;</td></tr>${c}`,
-        ""
-      );
+    var headerRow = `<tr class="stop-header"><th ${this.colspan}><i class="fa-solid fa-magnifying-glass"></i> ${stop.id}</th></tr>`;
+    var rows =
+      stop.data.stops
+        .map(
+          (item) =>
+            `<tr><td ${this.colspan}>${this.getStopNameWithVehicleMode(
+              item,
+              item.gtfsId.split(":").at(1)
+            )}</td></tr><tr class="stop-subheader"><td ${this.colspan
+            }>${this.getSubheaderRow(
+              item,
+              stop.minutesFrom
+            )}</td></tr><tr class="stop-subheader"><td ${this.colspan
+            }>${this.translate("STATION")}: ${item.parentStation.gtfsId
+              .split(":")
+              .at(1)} • ${item.parentStation.name
+            }</td></tr><tr class="stop-subheader"><td ${this.colspan
+            }>${this.translate("CLUSTER")}: ${item.cluster.gtfsId} • ${item.cluster.name
+            }</td></tr>`
+        )
+        .join('<tr><td title="getTableForStopSearch">&nbsp;</td></tr>') ||
+      `<tr><td title="getTableForStopSearch"><i class="fa-solid fa-circle-exclamation"></i> ${this.translate(
+        "NO_DATA"
+      )}</td></tr>`;
     return `${headerRow}${rows}`;
   },
 
@@ -282,12 +384,12 @@ Module.register("publika", {
   },
 
   getHeaderRow: function (stop) {
-    return stop.stopConfig?.name
-      ? `${this.getStopNameWithVehicleMode(stop)} - ${stop.stopConfig.name}`
-      : this.getStopNameWithVehicleMode(stop);
+    return stop.name
+      ? `${this.getStopNameWithVehicleMode(stop.data)} - ${stop.name}`
+      : this.getStopNameWithVehicleMode(stop.data);
   },
 
-  getSubheaderRow: function (stop) {
+  getSubheaderRow: function (stop, minutesFrom) {
     const items =
       stop.locationType === "STOP"
         ? [
@@ -309,10 +411,11 @@ Module.register("publika", {
         `<span class="stop-platform">${stop.platformCode}</span>`
       );
     }
-    if (stop.stopConfig?.minutesFrom) {
+    if (minutesFrom) {
       items.push(
-        `<span class="minutes-from">+${stop.stopConfig.minutesFrom
-        } ${this.translate("MINUTES_ABBR")}</span>`
+        `<span class="minutes-from">+${minutesFrom} ${this.translate(
+          "MINUTES_ABBR"
+        )}</span>`
       );
     }
     return items.reduce((p, c) => `${p} ${c}`, "");
@@ -328,13 +431,13 @@ Module.register("publika", {
       .reduce((p, c) => `${p}${c}`, "");
   },
 
-  getStopNameWithVehicleMode: function (item, includeId = undefined) {
-    const name = includeId ? `${includeId} • ${item.name}` : item.name;
-    if (!Array.isArray(item.vehicleMode)) {
-      item.vehicleMode = [item.vehicleMode];
+  getStopNameWithVehicleMode: function (data, includeId = undefined) {
+    const name = includeId ? `${includeId} • ${data.name}` : data.name;
+    if (!Array.isArray(data.vehicleMode)) {
+      data.vehicleMode = [data.vehicleMode];
     }
-    item.vehicleMode = [...new Set(item.vehicleMode)];
-    return `${this.getVehicleModeIcon(item.vehicleMode)} ${name}`;
+    data.vehicleMode = [...new Set(data.vehicleMode)];
+    return `${this.getVehicleModeIcon(data.vehicleMode)} ${name}`;
   },
 
   getVehicleModeIcon: function (vehicleModes) {

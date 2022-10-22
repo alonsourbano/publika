@@ -8,136 +8,6 @@ const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
-var self = undefined;
-var selfConfig = undefined;
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/graphql",
-    "User-Agent":
-      "Mozilla/5.0 (Node.js " +
-      Number(process.version.match(/^v(\d+\.\d+)/)[1]) +
-      ") MagicMirror/" +
-      global.version,
-    "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
-    "digitransit-subscription-key": selfConfig.hslApiKey,
-    Pragma: "no-cache"
-  };
-}
-
-function getStopSchedule(baseUrl, stop, count, successCb, errorCB) {
-  fetch(baseUrl, {
-    method: "POST",
-    body: getHSLStopTimesQuery(
-      stop.type ?? "stop",
-      stop.id || stop,
-      count,
-      moment().unix() + (stop.minutesFrom || 0) * 60
-    ),
-    headers: getHeaders()
-  })
-    .then(NodeHelper.checkFetchStatus)
-    .then((response) => response.json())
-    .then((json) => {
-      if (!json.data) {
-        errorCB("No data");
-        return;
-      }
-      const data = stop.type ? json.data[stop.type] : json.data.stop;
-      if (!data) {
-        errorCB(`No ${stop.type ?? "stop"} data for ${stop.id || stop}`);
-        return;
-      }
-      const response = {
-        stopConfig: stop.id ? stop : undefined,
-        stop: stop.id || stop,
-        responseType: "TIMETABLE",
-        name: data.name,
-        vehicleMode: data.vehicleMode,
-        desc: data.desc,
-        code: data.code,
-        platformCode: data.platformCode,
-        zoneId: data.zoneId,
-        alerts: data.alerts,
-        locationType: data.locationType,
-        stopTimes: processStopTimeData(data)
-      };
-      successCb(response);
-    })
-    .catch((error) => {
-      errorCB(error);
-    });
-}
-
-function getStopSearch(baseUrl, stop, successCb, errorCB) {
-  fetch(baseUrl, {
-    method: "POST",
-    body: getHSLStopSearchQuery(stop),
-    headers: getHeaders()
-  })
-    .then(NodeHelper.checkFetchStatus)
-    .then((response) => response.json())
-    .then((json) => {
-      if (!json.data) {
-        errorCB("No data");
-        return;
-      }
-      const response = {
-        stop: stop,
-        responseType: "STOP_SEARCH",
-        stops: json.data.stops
-      };
-      successCb(response);
-    })
-    .catch((error) => {
-      errorCB(error);
-    });
-}
-
-function getClusterSchedule(baseUrl, stop, count, successCb, errorCB) {
-  fetch(baseUrl, {
-    method: "POST",
-    body: getHSLClusterTimesQuery(
-      stop.id,
-      count,
-      moment().unix() + (stop.minutesFrom || 0) * 60
-    ),
-    headers: getHeaders()
-  })
-    .then(NodeHelper.checkFetchStatus)
-    .then((response) => response.json())
-    .then((json) => {
-      if (!json.data) {
-        errorCB("No data");
-        return;
-      }
-      const data = json.data.cluster;
-      if (!data) {
-        errorCB(`No cluster data for ${stop.id}`);
-        return;
-      }
-      if (!(data.stops && data.stops.length > 0)) {
-        errorCB(`Cluster ${stop.id} has no stop data`);
-        return;
-      }
-      const response = {
-        stopConfig: stop,
-        stop: stop.id,
-        responseType: "TIMETABLE",
-        name: data.name,
-        vehicleMode: data.stops.map((item) => item.vehicleMode),
-        zoneId: data.stops.map((item) => item.zoneId),
-        alerts: data.stops.map((item) => item.alerts),
-        locationType: "CLUSTER",
-        stopTimes: data.stops.map((item) => processStopTimeData(item))
-      };
-      successCb(response);
-    })
-    .catch((error) => {
-      errorCB(error);
-    });
-}
-
 function processStopTimeData(json) {
   if (!json || json.length < 1) {
     return [];
@@ -163,71 +33,178 @@ function processStopTimeData(json) {
 const getUntil = (date) =>
   Math.round(moment.duration(date.diff(moment())).asMinutes());
 
-const success = (data) => {
-  self.sendSocketNotification("PUBLIKA:TIMETABLE", data);
-  self.scheduleNextFetch(selfConfig.updateInterval);
-};
-
-const error = (err) => {
-  Log.error(err);
-  self.scheduleNextFetch(selfConfig.retryDelay);
-};
-
 module.exports = NodeHelper.create({
-  config: {},
-  updateTimer: null,
-  start: function () {
-    moment.locale(config.language || "fi");
-  },
+  initData: {},
 
   socketNotificationReceived: function (notification, payload) {
-    if (notification === "PUBLIKA:CONFIG") {
-      this.config = payload;
-      this.scheduleNextFetch(this.config.initialLoadDelay);
-    } else if (notification === "PUBLIKA:NOTIFICATION") {
-      payload.id = uuidv4();
-      this.sendSocketNotification("PUBLIKA:NOTIFICATION", payload);
-    }
-  },
-
-  fetchTimetables() {
-    self = this;
-    selfConfig = this.config;
-    this.config.stops.forEach((stop) => {
-      if (stop.disabled) {
-        return;
-      }
-      if (typeof stop === "string" && isNaN(stop)) {
-        return getStopSearch(this.config.apiURL, stop, success, error);
-      }
-      if (stop.type === "cluster") {
-        return getClusterSchedule(
-          this.config.apiURL,
-          stop,
-          stop.stopTimesCount ?? this.config.stopTimesCount,
-          success,
-          error
-        );
-      }
-      getStopSchedule(
-        this.config.apiURL,
-        stop,
-        stop.stopTimesCount ?? this.config.stopTimesCount,
-        success,
-        error
-      );
-    });
-  },
-
-  scheduleNextFetch: function (delay) {
-    if (typeof delay === "undefined") {
-      delay = 60 * 1000;
-    }
-
     const self = this;
-    clearTimeout(this.updateTimer);
-    this.updateTimer = setTimeout(function () {
-      self.fetchTimetables();
-    }, delay);
+    if (notification === "INIT") {
+      this.initData = payload;
+      return this.sendSocketNotification("READY", undefined);
+    }
+
+    if (notification === "FETCH_STOP_STOPTIMES") {
+      return this.getStopSchedule(
+        payload,
+        function (data) {
+          self.sendSocketNotification("RESOLVE_STOP_STOPTIMES", data);
+        },
+        function (error) {
+          Log.error(error);
+          self.sendSocketNotification("REJECT_STOP_STOPTIMES", payload);
+        }
+      );
+    }
+
+    if (notification === "FETCH_CLUSTER_STOPTIMES") {
+      return this.getClusterSchedule(
+        payload,
+        function (data) {
+          self.sendSocketNotification("RESOLVE_CLUSTER_STOPTIMES", data);
+        },
+        function (error) {
+          Log.error(error);
+          self.sendSocketNotification("REJECT_CLUSTER_STOPTIMES", payload);
+        }
+      );
+    }
+
+    if (notification === "SEARCH_STOP") {
+      return this.getStopSearch(
+        payload,
+        function (data) {
+          self.sendSocketNotification("RESOLVE_SEARCH_STOP", data);
+        },
+        function (error) {
+          Log.error(error);
+          self.sendSocketNotification("REJECT_SEARCH_STOP", payload);
+        }
+      );
+    }
+
+    if (notification === "NOTIFICATION") {
+      return this.sendSocketNotification("NOTIFICATION", {
+        id: uuidv4(),
+        ...payload
+      });
+    }
+
+    Log.error(`Unhandled socket notification ${notification}`, payload);
+    throw Error(`Unhandled socket notification ${notification}`);
+  },
+
+  getHeaders: function () {
+    return {
+      "Content-Type": "application/graphql",
+      "User-Agent":
+        "Mozilla/5.0 (Node.js " +
+        Number(process.version.match(/^v(\d+\.\d+)/)[1]) +
+        ") MagicMirror/" +
+        global.version,
+      "Cache-Control": "max-age=0, no-cache, no-store, must-revalidate",
+      "digitransit-subscription-key": this.initData.digiTransit.subscriptionKey,
+      Pragma: "no-cache"
+    };
+  },
+
+  getStopSearch: function (stop, resolve, reject) {
+    fetch(this.initData.digiTransit.apiUrl, {
+      method: "POST",
+      body: getHSLStopSearchQuery(stop.id),
+      headers: this.getHeaders()
+    })
+      .then(NodeHelper.checkFetchStatus)
+      .then((response) => response.json())
+      .then((json) =>
+        json.data
+          ? resolve({
+            ...stop,
+            data: {
+              responseType: "STOP_SEARCH",
+              stops: json.data.stops
+            }
+          })
+          : reject("No data")
+      )
+      .catch((error) => reject(error));
+  },
+
+  getClusterSchedule: function (stop, resolve, reject) {
+    fetch(this.initData.digiTransit.apiUrl, {
+      method: "POST",
+      body: getHSLClusterTimesQuery(
+        stop.id,
+        stop.stopTimesCount,
+        moment().unix() + (stop.minutesFrom || 0) * 60
+      ),
+      headers: this.getHeaders()
+    })
+      .then(NodeHelper.checkFetchStatus)
+      .then((response) => response.json())
+      .then((json) => {
+        if (!json.data) {
+          return reject("No data");
+        }
+        const data = json.data.cluster;
+        if (!data) {
+          return reject(`No cluster data for ${stop.id}`);
+        }
+        if (!(data.stops && data.stops.length > 0)) {
+          return reject(`Cluster ${stop.id} has no stop data`);
+        }
+        return resolve({
+          ...stop,
+          data: {
+            responseType: "TIMETABLE",
+            name: data.name,
+            vehicleMode: data.stops.map((item) => item.vehicleMode),
+            zoneId: data.stops.map((item) => item.zoneId),
+            alerts: data.stops.map((item) => item.alerts),
+            locationType: "CLUSTER",
+            stopTimes: data.stops.map((item) => processStopTimeData(item))
+          }
+        });
+      })
+      .catch((error) => reject(error));
+  },
+
+  getStopSchedule: function (stop, resolve, reject) {
+    fetch(this.initData.digiTransit.apiUrl, {
+      method: "POST",
+      body: getHSLStopTimesQuery(
+        stop.type ?? "stop",
+        stop.id,
+        stop.stopTimesCount,
+        moment().unix() + (stop.minutesFrom || 0) * 60
+      ),
+      headers: this.getHeaders()
+    })
+      .then(NodeHelper.checkFetchStatus)
+      .then((response) => response.json())
+      .then((json) => {
+        if (!json.data) {
+          return reject("No data");
+        }
+        const data = stop.type ? json.data[stop.type] : json.data.stop;
+        if (!data) {
+          return reject(`No ${stop.type ?? "stop"} data for ${stop.id}`);
+        }
+        return resolve({
+          ...stop,
+          data: {
+            responseType: "TIMETABLE",
+            name: data.name,
+            vehicleMode: data.vehicleMode,
+            desc: data.desc,
+            code: data.code,
+            platformCode: data.platformCode,
+            zoneId: data.zoneId,
+            alerts: data.alerts,
+            locationType: data.locationType,
+            stopTimes: processStopTimeData(data)
+          }
+        });
+      })
+      .catch((error) => reject(error));
   }
 });

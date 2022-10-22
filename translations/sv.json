@@ -1,6 +1,8 @@
 {
+  "ERROR": "Fel",
   "ERROR_SCHEDULE": "Det gick inte att få schemat",
   "MINUTES_ABBR": "min",
+  "NO_DATA": "Inga data",
   "NOW": "Nu",
   "SETUP_MODULE": "Ställ in stoppen i konfigurationen för modulen",
   "CLUSTER": "Kluster",
