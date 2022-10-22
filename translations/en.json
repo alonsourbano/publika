@@ -1,6 +1,8 @@
 {
+  "ERROR": "Error",
   "ERROR_SCHEDULE": "Couldn't get schedule",
   "MINUTES_ABBR": "min",
+  "NO_DATA": "No data",
   "NOW": "Now",
   "SETUP_MODULE": "Please setup the stops in the config for module",
   "CLUSTER": "Cluster",

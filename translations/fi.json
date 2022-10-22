@@ -1,6 +1,8 @@
 {
+  "ERROR": "Virhe",
   "ERROR_SCHEDULE": "Aikataulua ei voitu saada",
   "MINUTES_ABBR": "min",
+  "NO_DATA": "Ei dataa",
   "NOW": "Nyt",
   "SETUP_MODULE": "Ole hyvä ja aseta pysäkit moduulin konfiguraatiossa",
   "CLUSTER": "Klusteri",
