@@ -290,6 +290,7 @@ Module.register("publika", {
       .map(
         (item) =>
           `<tr${item.until > 0 ? "" : ' class="now"'}>${this.getRowForTimetable(
+            stop,
             item
           )}</tr>`
       )
@@ -320,12 +321,15 @@ Module.register("publika", {
       .sort((a, b) => a[sortKey] - b[sortKey]);
   },
 
-  getRowForTimetable: function (data) {
+  getRowForTimetable: function (stop, stoptime) {
     const columns = [
-      data.line,
-      this.getHeadsign(data),
-      { value: this.getUntilText(data), style: "time smaller" },
-      { value: moment(data.time).format(this.config.timeFormat), style: "time" }
+      stoptime.line,
+      this.getHeadsign(stop, stoptime),
+      { value: this.getUntilText(stoptime), style: "time smaller" },
+      {
+        value: moment(stoptime.time).format(this.config.timeFormat),
+        style: "time"
+      }
     ];
     return columns
       .map(
@@ -336,21 +340,16 @@ Module.register("publika", {
       .reduce((p, c) => `${p}${c}`, "");
   },
 
-  getHeadsign: function (item) {
-    console.log(item.stopConfig);
+  getHeadsign: function (stop, stoptime) {
     const fullHeadsign =
-      typeof item.stopConfig?.fullHeadsign === "undefined"
+      typeof stop.fullHeadsign === "undefined"
         ? this.config.fullHeadsign
-        : item.stopConfig?.fullHeadsign;
-    console.log(
-      typeof item.stopConfig?.fullHeadsign === "undefined",
-      fullHeadsign
-    );
+        : stop.fullHeadsign;
     const headsign =
-      item.headsign?.includes(" via ") && !item.stopConfig?.fullHeadsign
-        ? item.headsign.split(" via ").at(0)
-        : item.headsign;
-    return item.alerts.length > 0
+      stoptime.headsign?.includes(" via ") && !fullHeadsign
+        ? stoptime.headsign.split(" via ").at(0)
+        : stoptime.headsign;
+    return stoptime.alerts.length > 0
       ? `<i class="fa-solid fa-triangle-exclamation"></i> ${headsign}`
       : headsign;
   },
