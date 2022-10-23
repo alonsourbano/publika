@@ -1,5 +1,6 @@
-module.exports = (routes) => `{
-  cancelledTripTimes(routes: [${routes}]) {
+module.exports = (routes, minDate, minDepartureTime) => {
+  return `{
+  cancelledTripTimes(routes: [${routes}], minDate: "${minDate}", minDepartureTime: ${minDepartureTime}) {
     realtimeDeparture
     scheduledDeparture
     realtime
@@ -27,3 +28,4 @@ module.exports = (routes) => `{
     }
   }
 }`;
+}

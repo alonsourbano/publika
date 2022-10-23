@@ -4,6 +4,25 @@
 
 .publika .stop-subheader td {
   font-size: 70%;
+  padding: 3px 5px;
+}
+
+.publika .notification {
+  float: right;
+  position: absolute;
+  background-color: black;
+  border: 1px solid;
+  border-radius: 5px;
+  padding: 5px;
+  margin-bottom: 30px;
+}
+
+.publika .now {
+  animation: blinker 2s linear infinite;
+}
+
+.publika table td {
+  padding: 0 5px;
 }
 
 .publika table td.time {
@@ -36,26 +55,12 @@
   float: right;
 }
 
-.publika .notification {
-  float: right;
-  position: absolute;
-  background-color: black;
-  border: 1px solid;
-  border-radius: 5px;
-  padding: 5px;
-  margin-bottom: 30px;
-}
-
-.publika .now {
-  animation: blinker 2s linear infinite;
+.publika table .cancelled-trip {
+  text-decoration: line-through;
 }
 
 @keyframes blinker {
   50% {
     opacity: 0;
   }
-}
-
-.publika table .cancelled-trip {
-  text-decoration: line-through;
 }

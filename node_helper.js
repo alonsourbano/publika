@@ -251,9 +251,9 @@ module.exports = NodeHelper.create({
     fetch(this.initData.digiTransit.apiUrl, {
       method: "POST",
       body: getHSLCancelledTripsQuery(
-        Object.getOwnPropertyNames(routes)
-          .map((key) => `"${routes[key].gtfsId}"`)
-          .join(",")
+        routes.map((route) => `"${route}"`).join(","),
+        moment().format("YYYYMMDD"),
+        moment().diff(moment().clone().startOf("day"), "seconds")
       ),
       headers: this.getHeaders()
     })

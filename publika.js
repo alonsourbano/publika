@@ -39,8 +39,8 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      cancelledTrips: [1 * 1000, 5 * 1000, 100 * 1000, 20 * 1000, 60 * 1000],
-      default: [1000 * 1000]
+      cancelledTrips: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000],
+      default: 20 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
@@ -70,9 +70,9 @@ Module.register("publika", {
 
   processCancelledTripsNotification: function (notification, payload) {
     const self = this;
+    const routes = Object.getOwnPropertyNames(this.routes);
 
     if (notification === NOTIFICATION.CANCELLED_TRIPS.RESOLVE) {
-      const routes = this.routes;
       setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.CANCELLED_TRIPS.FETCH, routes);
       }, this.getNextInterval(this.intervals.update.cancelledTrips));
@@ -89,7 +89,6 @@ Module.register("publika", {
     }
 
     if (notification === NOTIFICATION.CANCELLED_TRIPS.REJECT) {
-      const routes = this.routes;
       return setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.CANCELLED_TRIPS.FETCH, routes);
       }, this.getNextInterval(this.intervals.retry));
@@ -106,14 +105,14 @@ Module.register("publika", {
       setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.CLUSTER_STOPTIMES.FETCH, stop);
       }, this.getNextInterval(this.intervals.update.default));
-      return this.updateStoptime(payload);
+      return this.updateStoptime(stop, data);
     }
 
     if (notification === NOTIFICATION.CLUSTER_STOPTIMES.REJECT) {
       setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.CLUSTER_STOPTIMES.FETCH, stop);
       }, this.getNextInterval(this.intervals.retry));
-      return this.rejectStoptime(payload.id);
+      return this.rejectStoptime(stop.id);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -127,14 +126,14 @@ Module.register("publika", {
       setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.STOP_STOPTIMES.FETCH, stop);
       }, this.getNextInterval(this.intervals.update.default));
-      return this.updateStoptime(payload);
+      return this.updateStoptime(stop, data);
     }
 
     if (notification === NOTIFICATION.STOP_STOPTIMES.REJECT) {
       setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.STOP_STOPTIMES.FETCH, stop);
       }, this.getNextInterval(this.intervals.retry));
-      return this.rejectStoptime(payload.id);
+      return this.rejectStoptime(stop.id);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -174,17 +173,17 @@ Module.register("publika", {
   processReadyNotification: function (notification, payload) {
     if (notification === NOTIFICATION.READY.RESOLVE) {
       this.loaded = true;
-      this.sendSocketNotification(
-        NOTIFICATION.CANCELLED_TRIPS.FETCH,
-        this.routes
-      );
+      const routes = Object.getOwnPropertyNames(this.routes);
+      this.sendSocketNotification(NOTIFICATION.CANCELLED_TRIPS.FETCH, routes);
       return this.config.stops
         .filter((stop) => !stop.disabled)
         .forEach((stop) => {
+          const { id, stopTimesCount, type, minutesFrom } = stop;
           const normalizedStop = {
-            id: stop.id ?? stop,
-            stopTimesCount: stop.stopTimesCount ?? this.config.stopTimesCount,
-            ...stop
+            id: id ?? stop,
+            stopTimesCount: stopTimesCount ?? this.config.stopTimesCount,
+            type,
+            minutesFrom
           };
           if (stop.type === "cluster") {
             return this.sendSocketNotification(
@@ -233,14 +232,14 @@ Module.register("publika", {
     const { data, ...stop } = payload;
 
     if (notification === NOTIFICATION.SEARCH_STOP.RESOLVE) {
-      return this.updateStoptime(payload);
+      return this.updateStoptime(stop, data);
     }
 
     if (notification === NOTIFICATION.SEARCH_STOP.REJECT) {
       setTimeout(() => {
         self.sendSocketNotification(NOTIFICATION.SEARCH_STOP.FETCH, stop);
       }, this.getNextInterval(this.intervals.retry));
-      return this.rejectStoptime(payload.id);
+      return this.rejectStoptime(stop.id);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -348,11 +347,11 @@ Module.register("publika", {
     this.updateDom();
   },
 
-  updateStoptime: function (payload) {
+  updateStoptime: function (stop, data) {
     const index = this.stoptimes.findIndex(
-      (stoptime) => stoptime.id === payload.id
+      (stoptime) => stoptime.id === stop.id
     );
-    this.stoptimes[index] = payload;
+    this.stoptimes[index].data = data;
     this.updateDom();
   },
 
@@ -374,10 +373,6 @@ Module.register("publika", {
     return [this.file(`${this.name}.css`)];
   },
 
-  getTimeTable: function (index) {
-    return this.stoptimes.at(index);
-  },
-
   start: function () {
     Log.info(`Starting module: ${this.name}`);
     this.config.stops
@@ -385,6 +380,7 @@ Module.register("publika", {
       .forEach((stop) => {
         this.stoptimes.push({
           id: stop.id ?? stop,
+          ...stop,
           data: { empty: true }
         });
       });
@@ -405,13 +401,11 @@ Module.register("publika", {
       return wrapper;
     }
 
-    var large = document.createElement("div");
-    large.className = "light small timetable";
+    wrapper.className = "light small timetable";
     var htmlElements = [...this.stoptimes.keys()]
-      .map((stop) => this.getTable(this.getTimeTable(stop)))
+      .map((index) => this.getTable(this.stoptimes.at(index)))
       .join('<tr><td title="getDom">&nbsp;</td></tr>');
-    large.innerHTML = `${this.getNotifications()}<table>${this.getCancelledTripsHtml()}${this.getStops()}${htmlElements}</table>`;
-    wrapper.appendChild(large);
+    wrapper.innerHTML = `${this.getNotifications()}<table>${htmlElements}</table>`;
 
     return wrapper;
   },
@@ -427,37 +421,6 @@ Module.register("publika", {
       )
       .reduce((p, c) => `${p}${c}`, "");
     return `<div class="notification"><table>${notifications}</table></div>`;
-  },
-
-  getStops: function () {
-    const keys = Object.getOwnPropertyNames(this.stops);
-    if (keys.length === 0) {
-      return "";
-    }
-    return keys
-      .map((key) =>
-        [
-          '<i class="fa-solid fa-s"></i>',
-          this.stops[key].gtfsId,
-          this.stops[key].parentStation?.gtfsId,
-          this.stops[key].cluster?.gtfsId
-        ]
-          .map((column) => `<td>${column}</td>`)
-          .join("")
-      )
-      .map((trip) => `<tr>${trip}</tr>`)
-      .join("")
-      .concat("<tr><td>&nbsp;</td></tr>");
-  },
-
-  getHeadsignForCancelledTrip: function (headsign) {
-    const fullHeadsign = this.config.fullHeadsign || true;
-    let [to, via] = headsign.split(" via ");
-    [to] = to.split(" - ");
-    if (via && fullHeadsign) {
-      [via] = via.split(" - ");
-    }
-    return via && fullHeadsign ? `${to} via ${via}` : to;
   },
 
   getTable: function (stop) {
@@ -491,9 +454,9 @@ Module.register("publika", {
         (item) =>
           `<tr${item.cancelled
             ? ' class="cancelled-trip"'
-            : item.until > 0
-              ? ""
-              : ' class="now"'
+            : item.until === 0
+              ? ' class="now"'
+              : ""
           }>${this.getRowForTimetable(stop, item)}</tr>`
       )
       .reduce((p, c) => `${p}${c}`, "");
@@ -525,24 +488,30 @@ Module.register("publika", {
 
   getStoptimes: function (stop) {
     const stoptimes = this.getSingleDimensionArray(stop.data.stopTimes, "ts");
-    if (stop.type === "cluster") {
-      const cancelledTrips = Object.getOwnPropertyNames(this.stops)
-        .filter((key) => this.stops[key].cluster.gtfsId === stop.id)
-        .map((key) => this.stops[key].gtfsId)
-        .map((gtfsId) => ({
-          stopGtfsId: gtfsId,
-          cancelledTrips: this.getCancelledTrips(gtfsId)
-        }))
-        .filter((stop) => stop.cancelledTrips.length)
-        .forEach((stop) => {
-          stop.cancelledTrips.forEach((trip) => {
-            stoptimes.push(trip);
-          });
-        });
-    } else {
-      Log.error("No cluster", stop);
+    const cancelledStoptimes = this.getStopsForType(stop.type, stop.id)
+      .map((gtfsId) => ({
+        stopGtfsId: gtfsId,
+        cancelledTrips: this.getCancelledTrips(gtfsId)
+      }))
+      .filter((stop) => stop.cancelledTrips.length)
+      .reduce((p, c) => [...p, ...c.cancelledTrips], []);
+    return [...stoptimes, ...cancelledStoptimes].sort((a, b) =>
+      moment(a.time).diff(moment(b.time))
+    );
+  },
+
+  getStopsForType: function (type, id) {
+    if (type === "cluster") {
+      return Object.getOwnPropertyNames(this.stops)
+        .filter((key) => this.stops[key].cluster?.gtfsId === id)
+        .map((key) => this.stops[key].gtfsId);
     }
-    return stoptimes.sort((a, b) => moment(a.time).diff(moment(b.time)));
+    if (type === "station") {
+      return Object.getOwnPropertyNames(this.stops)
+        .filter((key) => this.stops[key].parentStation?.gtfsId === `HSL:${id}`)
+        .map((key) => this.stops[key].gtfsId);
+    }
+    return [`HSL:${id}`];
   },
 
   getCancelledTrips: function (stopGtfsId) {
@@ -564,36 +533,9 @@ Module.register("publika", {
       .filter((trip) => trip);
   },
 
-  getCancelledTripsHtml: function () {
-    if (this.cancelledTrips.length === 0) {
-      return "";
-    }
-    return this.cancelledTrips
-      .map((trip) =>
-        [
-          trip.trip.routeShortName,
-          this.getHeadsignForCancelledTrip(trip.headsign),
-          { value: '<i class="fa-solid fa-xmark"></i>', style: "time" },
-          {
-            value: moment(trip.time).format(this.timeFormat),
-            style: "time"
-          }
-        ]
-          .map(
-            (column) =>
-              `<td${column.style ? ` class="${column.style}"` : ""}>${column.value ?? column
-              }</td>`
-          )
-          .join("")
-      )
-      .map((trip) => `<tr class="cancelled-trip">${trip}</tr>`)
-      .join("")
-      .concat("<tr><td>&nbsp;</td></tr>");
-  },
-
   getRowForTimetable: function (stop, stoptime) {
     const columns = stoptime.cancelled
-      ? this.getCancelledRow(stoptime)
+      ? this.getCancelledRow(stop, stoptime)
       : this.getScheduledRow(stop, stoptime);
     return columns
       .map(
@@ -616,10 +558,10 @@ Module.register("publika", {
     ];
   },
 
-  getCancelledRow: function (stoptime) {
+  getCancelledRow: function (stop, stoptime) {
     return [
       stoptime.line,
-      this.getHeadsignForCancelledTrip(stoptime.headsign),
+      this.getHeadsign(stop, stoptime),
       { value: '<i class="fa-solid fa-xmark"></i>', style: "time" },
       {
         value: moment(stoptime.time).format(this.timeFormat),
@@ -674,9 +616,11 @@ Module.register("publika", {
       return "";
     }
     const realtimeIcon = item.realtime ? "" : "~";
-    return item.until > 0
-      ? `${realtimeIcon}${item.until} ${this.translate("MINUTES_ABBR")}`
-      : `${realtimeIcon}${this.translate("NOW")}`;
+    return item.until === 0
+      ? `${realtimeIcon}${this.translate("NOW")}`
+      : item.until > 0
+        ? `${realtimeIcon}${item.until} ${this.translate("MINUTES_ABBR")}`
+        : '<i class="fa-solid fa-clock-rotate-left"></i>';
   },
 
   getHeaderRow: function (stop) {
@@ -709,9 +653,8 @@ Module.register("publika", {
     }
     if (minutesFrom) {
       items.push(
-        `<span class="minutes-from">+${minutesFrom} ${this.translate(
-          "MINUTES_ABBR"
-        )}</span>`
+        `<span class="minutes-from">${minutesFrom > 0 ? `+${minutesFrom}` : minutesFrom
+        } ${this.translate("MINUTES_ABBR")}</span>`
       );
     }
     return items.reduce((p, c) => `${p} ${c}`, "");
