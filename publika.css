@@ -55,3 +55,7 @@
     opacity: 0;
   }
 }
+
+.publika table .cancelled-trip {
+  text-decoration: line-through;
+}

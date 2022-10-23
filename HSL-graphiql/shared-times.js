@@ -1,4 +1,5 @@
 module.exports = (count, startTime) => `
+    gtfsId
     name
     code
     desc
@@ -6,17 +7,28 @@ module.exports = (count, startTime) => `
     vehicleMode
     platformCode
     locationType
+    routes {
+      gtfsId
+    }
     parentStation {
       gtfsId
-      name
+    }
+    cluster {
+      gtfsId
     }
     stops {
       gtfsId
-      name
-      code
+      parentStation {
+        gtfsId
+      }
+      cluster {
+        gtfsId
+      }
+      routes {
+        gtfsId
+      }
     }
     stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: true, omitCanceled: true) {
-      realtimeArrival
       realtimeDeparture
       realtime
       serviceDay
