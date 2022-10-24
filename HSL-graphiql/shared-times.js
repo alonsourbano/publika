@@ -28,9 +28,11 @@ module.exports = (count, startTime) => `
         gtfsId
       }
     }
-    stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: true, omitCanceled: true) {
+    stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: true, omitCanceled: false) {
       realtimeDeparture
+      scheduledDeparture
       realtime
+      realtimeState
       serviceDay
       headsign
       trip {

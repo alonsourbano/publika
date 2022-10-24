@@ -5,7 +5,6 @@ const NodeHelper = require("node_helper");
 const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
 const getHSLClusterTimesQuery = require("./HSL-graphiql/cluster-times");
 const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
-const getHSLCancelledTripsQuery = require("./HSL-graphiql/cancelled-trips");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
@@ -15,7 +14,11 @@ function processStopTimeData(json) {
   }
   let times = [];
   json.stoptimesWithoutPatterns.forEach((value) => {
-    let datVal = new Date((value.serviceDay + value.realtimeDeparture) * 1000);
+    let datVal = new Date(
+      (value.serviceDay +
+        (value.realtimeDeparture ?? value.scheduledDeparture)) *
+      1000
+    );
     const time = moment(datVal);
     const stopTime = {
       line: value.trip.routeShortName,
@@ -23,6 +26,7 @@ function processStopTimeData(json) {
       alerts: value.trip.alerts,
       time,
       realtime: value.realtime,
+      cancelled: value.realtimeState === "CANCELED",
       until: getUntil(time),
       ts: datVal.getTime()
     };
@@ -49,10 +53,7 @@ module.exports = NodeHelper.create({
       return this.getStopSchedule(
         payload,
         (data) => {
-          const { routes, stops, ...stop } = data;
-          self.sendSocketNotification("RESOLVE_STOP_STOPTIMES", stop);
-          self.sendSocketNotification("RESOLVE_ROUTES", routes);
-          self.sendSocketNotification("RESOLVE_STOPS", stops);
+          self.sendSocketNotification("RESOLVE_STOP_STOPTIMES", data);
         },
         (error) => {
           Log.error(error);
@@ -65,10 +66,7 @@ module.exports = NodeHelper.create({
       return this.getClusterSchedule(
         payload,
         (data) => {
-          const { routes, stops, ...stop } = data;
-          self.sendSocketNotification("RESOLVE_CLUSTER_STOPTIMES", stop);
-          self.sendSocketNotification("RESOLVE_ROUTES", routes);
-          self.sendSocketNotification("RESOLVE_STOPS", stops);
+          self.sendSocketNotification("RESOLVE_CLUSTER_STOPTIMES", data);
         },
         (error) => {
           Log.error(error);
@@ -86,19 +84,6 @@ module.exports = NodeHelper.create({
         (error) => {
           Log.error(error);
           self.sendSocketNotification("REJECT_SEARCH_STOP", payload);
-        }
-      );
-    }
-
-    if (notification === "FETCH_CANCELLED_TRIPS") {
-      return this.getCancelledTripTimes(
-        payload,
-        (data) => {
-          self.sendSocketNotification("RESOLVE_CANCELLED_TRIPS", data);
-        },
-        (error) => {
-          Log.error(error);
-          self.sendSocketNotification("REJECT_CANCELLED_TRIPS", payload);
         }
       );
     }
@@ -136,17 +121,18 @@ module.exports = NodeHelper.create({
     })
       .then(NodeHelper.checkFetchStatus)
       .then((response) => response.json())
-      .then((json) =>
-        json.data
-          ? resolve({
+      .then((json) => {
+        if (json.data) {
+          return resolve({
             ...stop,
             data: {
               responseType: "STOP_SEARCH",
               stops: json.data.stops
             }
-          })
-          : reject("No data")
-      )
+          });
+        }
+        return reject("No data");
+      })
       .catch((error) => reject(error));
   },
 
@@ -175,16 +161,6 @@ module.exports = NodeHelper.create({
         }
         return resolve({
           ...stop,
-          routes: data.stops
-            .map((item) => item.routes)
-            .reduce((p, c) => [...p, ...c], []),
-          stops: data.stops
-            .map((item) => ({
-              gtfsId: item.gtfsId,
-              parentStation: item.parentStation,
-              cluster: item.cluster
-            }))
-            .reduce((p, c) => [...p, c], []),
           data: {
             responseType: "TIMETABLE",
             name: data.name,
@@ -222,13 +198,6 @@ module.exports = NodeHelper.create({
         }
         return resolve({
           ...stop,
-          routes: [
-            ...data.routes,
-            ...data.stops
-              .map((item) => item.routes)
-              .reduce((p, c) => [...p, ...c], [])
-          ],
-          stops: data.stops,
           data: {
             responseType: "TIMETABLE",
             gtfsId: data.gtfsId,
@@ -244,40 +213,6 @@ module.exports = NodeHelper.create({
           }
         });
       })
-      .catch((error) => reject(error));
-  },
-
-  getCancelledTripTimes: function (routes, resolve, reject) {
-    fetch(this.initData.digiTransit.apiUrl, {
-      method: "POST",
-      body: getHSLCancelledTripsQuery(
-        routes.map((route) => `"${route}"`).join(","),
-        moment().format("YYYYMMDD"),
-        moment().diff(moment().clone().startOf("day"), "seconds")
-      ),
-      headers: this.getHeaders()
-    })
-      .then(NodeHelper.checkFetchStatus)
-      .then((response) => response.json())
-      .then((json) =>
-        json.data
-          ? resolve({
-            data: json.data.cancelledTripTimes.map((item) => {
-              item.trip.stoptimes = item.trip.stoptimes.map((stoptime) => {
-                const datVal = new Date(
-                  (item.serviceDay +
-                    (stoptime.scheduledDeparture ??
-                      stoptime.realtimeDeparture)) *
-                  1000
-                );
-                const time = moment(datVal);
-                return { ...stoptime, time, ts: datVal.getTime() };
-              });
-              return item;
-            })
-          })
-          : reject("No data")
-      )
       .catch((error) => reject(error));
   }
 });

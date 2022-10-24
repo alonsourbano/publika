@@ -1,11 +1,6 @@
 // Based on code from Sami Mäkinen (https://github.com/ZakarFin)
 
 const NOTIFICATION = {
-  CANCELLED_TRIPS: {
-    FETCH: "FETCH_CANCELLED_TRIPS",
-    REJECT: "REJECT_CANCELLED_TRIPS",
-    RESOLVE: "RESOLVE_CANCELLED_TRIPS"
-  },
   CLUSTER_STOPTIMES: {
     FETCH: "FETCH_CLUSTER_STOPTIMES",
     REJECT: "REJECT_CLUSTER_STOPTIMES",
@@ -13,7 +8,6 @@ const NOTIFICATION = {
   },
   NOTIFICATION: { RESOLVE: "NOTIFICATION" },
   READY: { RESOLVE: "READY" },
-  ROUTES: { RESOLVE: "RESOLVE_ROUTES" },
   SEARCH_STOP: {
     FETCH: "SEARCH_STOP",
     REJECT: "REJECT_SEARCH_STOP",
@@ -23,8 +17,7 @@ const NOTIFICATION = {
     FETCH: "FETCH_STOP_STOPTIMES",
     REJECT: "REJECT_STOP_STOPTIMES",
     RESOLVE: "RESOLVE_STOP_STOPTIMES"
-  },
-  STOPS: { RESOLVE: "RESOLVE_STOPS" }
+  }
 };
 
 const colspan = 'colspan="4"';
@@ -39,7 +32,7 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      cancelledTrips: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000],
+      cancelledTrips: [1000 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000],
       default: 20 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
@@ -50,8 +43,6 @@ Module.register("publika", {
   notifications: [],
   stoptimes: [],
   cancelledTrips: [],
-  routes: {},
-  stops: {},
   apiKeyDeadLine: undefined,
 
   notificationReceived: function (notification, payload, sender) {
@@ -66,35 +57,6 @@ Module.register("publika", {
     }
 
     Log.warn(`Unhandled notification ${notification}`, payload, sender);
-  },
-
-  processCancelledTripsNotification: function (notification, payload) {
-    const self = this;
-    const routes = Object.getOwnPropertyNames(this.routes);
-
-    if (notification === NOTIFICATION.CANCELLED_TRIPS.RESOLVE) {
-      setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.CANCELLED_TRIPS.FETCH, routes);
-      }, this.getNextInterval(this.intervals.update.cancelledTrips));
-      this.cancelledTrips = payload.data;
-      // payload.data?.forEach((item) => {
-      // this.notify(
-      //   `Service ${item.trip.routeShortName} to ${item.headsign} at ${moment(
-      //     item.time
-      //   ).format(this.timeFormat)} has been cancelled`,
-      //   5
-      // );
-      // });
-      return this.updateDom();
-    }
-
-    if (notification === NOTIFICATION.CANCELLED_TRIPS.REJECT) {
-      return setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.CANCELLED_TRIPS.FETCH, routes);
-      }, this.getNextInterval(this.intervals.retry));
-    }
-
-    this.rejectSocketNotification(notification, payload);
   },
 
   processClusterStoptimesNotification: function (notification, payload) {
@@ -173,8 +135,6 @@ Module.register("publika", {
   processReadyNotification: function (notification, payload) {
     if (notification === NOTIFICATION.READY.RESOLVE) {
       this.loaded = true;
-      const routes = Object.getOwnPropertyNames(this.routes);
-      this.sendSocketNotification(NOTIFICATION.CANCELLED_TRIPS.FETCH, routes);
       return this.config.stops
         .filter((stop) => !stop.disabled)
         .forEach((stop) => {
@@ -202,26 +162,6 @@ Module.register("publika", {
             normalizedStop
           );
         });
-    }
-
-    this.rejectSocketNotification(notification, payload);
-  },
-
-  processRoutesNotification: function (notification, payload) {
-    if (notification === NOTIFICATION.ROUTES.RESOLVE) {
-      return payload.forEach((item) => {
-        this.routes[item.gtfsId] = { ...this.routes[item.gtfsId], ...item };
-      });
-    }
-
-    this.rejectSocketNotification(notification, payload);
-  },
-
-  processStopsNotification: function (notification, payload) {
-    if (notification === NOTIFICATION.STOPS.RESOLVE) {
-      return payload.forEach((item) => {
-        this.stops[item.gtfsId] = { ...this.stops[item.gtfsId], ...item };
-      });
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -259,17 +199,6 @@ Module.register("publika", {
       this.checkSocketNotification(notification, NOTIFICATION.CLUSTER_STOPTIMES)
     ) {
       return this.processClusterStoptimesNotification(notification, payload);
-    }
-    if (this.checkSocketNotification(notification, NOTIFICATION.ROUTES)) {
-      return this.processRoutesNotification(notification, payload);
-    }
-    if (this.checkSocketNotification(notification, NOTIFICATION.STOPS)) {
-      return this.processStopsNotification(notification, payload);
-    }
-    if (
-      this.checkSocketNotification(notification, NOTIFICATION.CANCELLED_TRIPS)
-    ) {
-      return this.processCancelledTripsNotification(notification, payload);
     }
     if (this.checkSocketNotification(notification, NOTIFICATION.NOTIFICATION)) {
       return this.processNotificationNotification(notification, payload);
@@ -351,13 +280,17 @@ Module.register("publika", {
     const index = this.stoptimes.findIndex(
       (stoptime) => stoptime.id === stop.id
     );
-    this.stoptimes[index].data = data;
+    const { stopTimes, alerts, stops, ...meta } = data;
+    this.stoptimes[index].stoptimes = stopTimes;
+    this.stoptimes[index].meta = meta;
+    this.stoptimes[index].alerts = alerts;
+    this.stoptimes[index].searchStops = stops;
     this.updateDom();
   },
 
   rejectStoptime: function (id) {
     const index = this.stoptimes.findIndex((stoptime) => stoptime.id === id);
-    this.stoptimes[index].data = { error: true };
+    this.stoptimes[index].stoptimes = { error: true };
     this.updateDom();
   },
 
@@ -381,7 +314,7 @@ Module.register("publika", {
         this.stoptimes.push({
           id: stop.id ?? stop,
           ...stop,
-          data: { empty: true }
+          stoptimes: { empty: true }
         });
       });
   },
@@ -430,25 +363,21 @@ Module.register("publika", {
     if (stop.disabled) {
       return "";
     }
-    if (stop.data?.empty || stop.data?.error) {
-      return `<tr class="stop-header"><th ${colspan}>HSL:${stop.id
-        }</th></tr><tr><td ${colspan}>${stop.data?.error
-          ? '<i class="fa-solid fa-xmark"></i> '
-          : '<i class="fa-solid fa-spinner"></i> '
-        }${this.translate(stop.data?.error ? "ERROR" : "LOADING")}</td></tr>`;
+    if (stop.stoptimes?.empty || stop.stoptimes?.error) {
+      return `${this.getHeaderRow(stop)}<tr><td ${colspan}>${stop.stoptimes?.error
+        ? '<i class="fa-solid fa-xmark"></i> '
+        : '<i class="fa-solid fa-spinner"></i> '
+        }${this.translate(
+          stop.stoptimes?.error ? "ERROR" : "LOADING"
+        )}</td></tr>`;
     }
-    return stop.data.responseType === "STOP_SEARCH"
+    return stop.meta.responseType === "STOP_SEARCH"
       ? this.getTableForStopSearch(stop)
       : this.getTableForTimetable(stop);
   },
 
   getTableForTimetable: function (stop) {
-    const headerRow = `<tr class="stop-header"><th ${colspan}>${this.getHeaderRow(
-      stop
-    )}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
-      stop.data,
-      stop.minutesFrom
-    )}<td></tr>`;
+    const headerRow = this.getHeaderRow(stop);
     const rows = this.getStoptimes(stop)
       .map(
         (item) =>
@@ -461,7 +390,7 @@ Module.register("publika", {
       )
       .reduce((p, c) => `${p}${c}`, "");
     const stopAlerts = this.getSingleDimensionArray(
-      stop.data.alerts,
+      stop.alerts,
       "effectiveStartDate"
     );
     const alerts =
@@ -487,50 +416,8 @@ Module.register("publika", {
   },
 
   getStoptimes: function (stop) {
-    const stoptimes = this.getSingleDimensionArray(stop.data.stopTimes, "ts");
-    const cancelledStoptimes = this.getStopsForType(stop.type, stop.id)
-      .map((gtfsId) => ({
-        stopGtfsId: gtfsId,
-        cancelledTrips: this.getCancelledTrips(gtfsId)
-      }))
-      .filter((stop) => stop.cancelledTrips.length)
-      .reduce((p, c) => [...p, ...c.cancelledTrips], []);
-    return [...stoptimes, ...cancelledStoptimes].sort((a, b) =>
-      moment(a.time).diff(moment(b.time))
-    );
-  },
-
-  getStopsForType: function (type, id) {
-    if (type === "cluster") {
-      return Object.getOwnPropertyNames(this.stops)
-        .filter((key) => this.stops[key].cluster?.gtfsId === id)
-        .map((key) => this.stops[key].gtfsId);
-    }
-    if (type === "station") {
-      return Object.getOwnPropertyNames(this.stops)
-        .filter((key) => this.stops[key].parentStation?.gtfsId === `HSL:${id}`)
-        .map((key) => this.stops[key].gtfsId);
-    }
-    return [`HSL:${id}`];
-  },
-
-  getCancelledTrips: function (stopGtfsId) {
-    return this.cancelledTrips
-      .map((trip) => {
-        const t = trip.trip.stoptimes.filter(
-          (stoptime) => stoptime.stop.gtfsId === stopGtfsId
-        );
-        const [stoptime] = t;
-        return t.length > 0
-          ? {
-            headsign: stoptime.headsign,
-            cancelled: true,
-            line: trip.trip.routeShortName,
-            time: stoptime.time
-          }
-          : undefined;
-      })
-      .filter((trip) => trip);
+    const stoptimes = this.getSingleDimensionArray(stop.stoptimes, "ts");
+    return stoptimes;
   },
 
   getRowForTimetable: function (stop, stoptime) {
@@ -588,7 +475,7 @@ Module.register("publika", {
   getTableForStopSearch: function (stop) {
     const headerRow = `<tr class="stop-header"><th ${colspan}><i class="fa-solid fa-magnifying-glass"></i> ${stop.id}</th></tr>`;
     const rows =
-      stop.data.stops
+      stop.searchStops
         .map(
           (item) =>
             `<tr><td ${colspan}>${this.getStopNameWithVehicleMode(
@@ -624,9 +511,16 @@ Module.register("publika", {
   },
 
   getHeaderRow: function (stop) {
-    return stop.name
-      ? `${this.getStopNameWithVehicleMode(stop.data)} - ${stop.name}`
-      : this.getStopNameWithVehicleMode(stop.data);
+    if (!stop.meta) {
+      return `<tr class="stop-header"><th ${colspan}>HSL:${stop.id}</th></tr>`;
+    }
+    const header = stop.name
+      ? `${this.getStopNameWithVehicleMode(stop.meta)} - ${stop.name}`
+      : this.getStopNameWithVehicleMode(stop.meta);
+    return `<tr class="stop-header"><th ${colspan}>${header}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
+      stop.meta,
+      stop.minutesFrom
+    )}<td></tr>`;
   },
 
   getSubheaderRow: function (stop, minutesFrom) {
