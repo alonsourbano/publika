@@ -14,15 +14,20 @@ function processStopTimeData(json) {
   }
   let times = [];
   json.stoptimesWithoutPatterns.forEach((value) => {
-    let datVal = new Date((value.serviceDay + value.realtimeDeparture) * 1000);
-    const date = moment(datVal);
+    let datVal = new Date(
+      (value.serviceDay +
+        (value.realtimeDeparture ?? value.scheduledDeparture)) *
+      1000
+    );
+    const time = moment(datVal);
     const stopTime = {
       line: value.trip.routeShortName,
       headsign: value.headsign,
       alerts: value.trip.alerts,
-      time: date,
+      time,
       realtime: value.realtime,
-      until: getUntil(date),
+      cancelled: value.realtimeState === "CANCELED",
+      until: getUntil(time),
       ts: datVal.getTime()
     };
     times.push(stopTime);
@@ -46,10 +51,10 @@ module.exports = NodeHelper.create({
     if (notification === "FETCH_STOP_STOPTIMES") {
       return this.getStopSchedule(
         payload,
-        function (data) {
+        (data) => {
           self.sendSocketNotification("RESOLVE_STOP_STOPTIMES", data);
         },
-        function (error) {
+        (error) => {
           Log.error(error);
           self.sendSocketNotification("REJECT_STOP_STOPTIMES", payload);
         }
@@ -59,10 +64,10 @@ module.exports = NodeHelper.create({
     if (notification === "FETCH_CLUSTER_STOPTIMES") {
       return this.getClusterSchedule(
         payload,
-        function (data) {
+        (data) => {
           self.sendSocketNotification("RESOLVE_CLUSTER_STOPTIMES", data);
         },
-        function (error) {
+        (error) => {
           Log.error(error);
           self.sendSocketNotification("REJECT_CLUSTER_STOPTIMES", payload);
         }
@@ -72,10 +77,10 @@ module.exports = NodeHelper.create({
     if (notification === "SEARCH_STOP") {
       return this.getStopSearch(
         payload,
-        function (data) {
+        (data) => {
           self.sendSocketNotification("RESOLVE_SEARCH_STOP", data);
         },
-        function (error) {
+        (error) => {
           Log.error(error);
           self.sendSocketNotification("REJECT_SEARCH_STOP", payload);
         }
@@ -115,17 +120,18 @@ module.exports = NodeHelper.create({
     })
       .then(NodeHelper.checkFetchStatus)
       .then((response) => response.json())
-      .then((json) =>
-        json.data
-          ? resolve({
+      .then((json) => {
+        if (json.data) {
+          return resolve({
             ...stop,
             data: {
               responseType: "STOP_SEARCH",
               stops: json.data.stops
             }
-          })
-          : reject("No data")
-      )
+          });
+        }
+        return reject("No data");
+      })
       .catch((error) => reject(error));
   },
 
@@ -193,6 +199,7 @@ module.exports = NodeHelper.create({
           ...stop,
           data: {
             responseType: "TIMETABLE",
+            gtfsId: data.gtfsId,
             name: data.name,
             vehicleMode: data.vehicleMode,
             desc: data.desc,

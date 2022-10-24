@@ -4,7 +4,7 @@
   "MINUTES_ABBR": "min",
   "NO_DATA": "Ei dataa",
   "NOW": "Nyt",
-  "SETUP_MODULE": "Ole hyvä ja aseta pysäkit moduulin konfiguraatiossa",
+  "SETUP_MODULE": "Aseta pysäkit tiedostossa config.js",
   "CLUSTER": "Klusteri",
   "PIER": "Laituri",
   "PLATFORM": "Laituri",

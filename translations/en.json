@@ -4,7 +4,7 @@
   "MINUTES_ABBR": "min",
   "NO_DATA": "No data",
   "NOW": "Now",
-  "SETUP_MODULE": "Please setup the stops in the config for module",
+  "SETUP_MODULE": "Setup the stops in config.js",
   "CLUSTER": "Cluster",
   "PIER": "Pier",
   "PLATFORM": "Platform",

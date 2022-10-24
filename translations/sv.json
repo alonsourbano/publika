@@ -4,7 +4,7 @@
   "MINUTES_ABBR": "min",
   "NO_DATA": "Inga data",
   "NOW": "Nu",
-  "SETUP_MODULE": "Ställ in stoppen i konfigurationen för modulen",
+  "SETUP_MODULE": "Ställ in stoppen i config.js",
   "CLUSTER": "Kluster",
   "PIER": "Pir",
   "PLATFORM": "Plattform",
