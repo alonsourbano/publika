@@ -42,6 +42,7 @@ Module.register("publika", {
   notifications: [],
   stoptimes: [],
   apiKeyDeadLine: undefined,
+  debug: config.logLevel.includes("DEBUG"),
 
   notificationReceived: function (notification, payload, sender) {
     if (notification === "ALL_MODULES_STARTED") {
@@ -246,7 +247,8 @@ Module.register("publika", {
       digiTransit: {
         subscriptionKey: this.config.hslApiKey,
         apiUrl: this.digitransitApiUrl
-      }
+      },
+      debug: this.debug
     });
   },
 
@@ -498,10 +500,11 @@ Module.register("publika", {
     const header = stop.name
       ? `${this.getStopNameWithVehicleMode(stop.meta)} - ${stop.name}`
       : this.getStopNameWithVehicleMode(stop.meta);
-    return `<tr class="stop-header"><th ${colspan}>${header}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
-      stop.meta,
-      stop.minutesFrom
-    )}<td></tr>`;
+    return `<tr class="stop-header"${this.debug ? ` data-source='${JSON.stringify(stop)}'` : ""
+      }><th ${colspan}>${header}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
+        stop.meta,
+        stop.minutesFrom
+      )}<td></tr>`;
   },
 
   getSubheaderRow: function (stop, minutesFrom) {
