@@ -38,8 +38,6 @@ function processStopTimeData(json) {
 const getUntil = (date) =>
   Math.round(moment.duration(date.diff(moment())).asMinutes());
 
-
-
 module.exports = NodeHelper.create({
   initData: {},
 
