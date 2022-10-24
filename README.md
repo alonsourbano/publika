@@ -15,6 +15,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Supports english, finnish and swedish
 - Displays times in realtime when available
   - If not, it displays the scheduled departure using the `~` symbol, like HSL does. 
+- Displays cancelled trips
 - Amount of stops to display can be configured for all stops or individually
 - Displays alerts for services and stops/stations
 - Can display one stop or the whole station or cluster
