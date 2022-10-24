@@ -176,6 +176,7 @@ module.exports = NodeHelper.create({
             stopTimes: data.stops
               .map((item) => processStopTimeData(item))
               .reduce((p, c) => [...p, ...c], [])
+              .sort((a, b) => moment(a.time).diff(moment(b.time)))
           }
         });
       })
