@@ -279,6 +279,9 @@ Module.register("publika", {
       (stoptime) => stoptime.id === stop.id
     );
     const { stopTimes, alerts, stops, ...meta } = data;
+    if (alerts.length) {
+      Log.log(alerts);
+    }
     this.stoptimes[index].stoptimes = stopTimes;
     this.stoptimes[index].meta = meta;
     this.stoptimes[index].alerts = alerts;
@@ -363,8 +366,8 @@ Module.register("publika", {
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
       return `${this.getHeaderRow(stop)}<tr><td ${colspan}>${stop.stoptimes?.error
-        ? '<i class="fa-solid fa-xmark"></i> '
-        : '<i class="fa-solid fa-spinner"></i> '
+          ? '<i class="fa-solid fa-xmark"></i> '
+          : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.stoptimes?.error ? "ERROR" : "LOADING"
         )}</td></tr>`;
