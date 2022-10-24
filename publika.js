@@ -363,8 +363,8 @@ Module.register("publika", {
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
       return `${this.getHeaderRow(stop)}<tr><td ${colspan}>${stop.stoptimes?.error
-          ? '<i class="fa-solid fa-xmark"></i> '
-          : '<i class="fa-solid fa-spinner"></i> '
+        ? '<i class="fa-solid fa-xmark"></i> '
+        : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.stoptimes?.error ? "ERROR" : "LOADING"
         )}</td></tr>`;
@@ -387,7 +387,7 @@ Module.register("publika", {
           }>${this.getRowForTimetable(stop, item)}</tr>`
       )
       .reduce((p, c) => `${p}${c}`, "");
-    const stopAlerts = stop.alerts;
+    const stopAlerts = stop.alerts ?? [];
     const alerts =
       stopAlerts.length > 0
         ? stopAlerts.map(

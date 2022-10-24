@@ -203,10 +203,30 @@ module.exports = NodeHelper.create({
         if (!data) {
           return reject(`No ${stop.type ?? "stop"} data for ${stop.id}`);
         }
-        const { alerts, ...dataOther } = data;
         return resolve({
           ...stop,
-          alerts,
+          alerts: [
+            ...data.alerts,
+            ...data.routes
+              .map((route) => route.alerts)
+              .reduce((p, c) => [...p, ...c], []),
+            ...data.stops
+              .map((stop) => stop.alerts)
+              .reduce((p, c) => [...p, ...c], []),
+            ...data.stops
+              .map((stop) =>
+                stop.routes
+                  .map((route) => route.alerts)
+                  .reduce((p, c) => [...p, ...c], [])
+              )
+              .reduce((p, c) => [...p, ...c], []),
+            ...data.stoptimesWithoutPatterns
+              .map((stoptime) => stoptime.trip.alerts)
+              .reduce((p, c) => [...p, ...c], []),
+            ...data.stoptimesWithoutPatterns
+              .map((stoptime) => stoptime.trip.route.alerts)
+              .reduce((p, c) => [...p, ...c], [])
+          ],
           data: {
             responseType: "TIMETABLE",
             gtfsId: data.gtfsId,
@@ -216,7 +236,6 @@ module.exports = NodeHelper.create({
             code: data.code,
             platformCode: data.platformCode,
             zoneId: data.zoneId,
-            alerts: data.alerts,
             locationType: data.locationType,
             stopTimes: processStopTimeData(data)
           }
