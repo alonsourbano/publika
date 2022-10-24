@@ -1,3 +1,5 @@
+const alerts = require("./alerts");
+
 module.exports = (count, startTime) => `
     gtfsId
     name
@@ -7,6 +9,15 @@ module.exports = (count, startTime) => `
     vehicleMode
     platformCode
     locationType
+    routes {
+      ${alerts}
+    }
+    stops {
+      routes {
+        ${alerts}
+      }
+      ${alerts}
+    }
     stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: true, omitCanceled: false) {
       realtimeDeparture
       scheduledDeparture
@@ -16,31 +27,10 @@ module.exports = (count, startTime) => `
       headsign
       trip {
         routeShortName
-        alerts {
-          alertHash
-          alertHeaderTextTranslations {
-            text
-            language
-          }
-          alertDescriptionTextTranslations {
-            text
-            language
-          }
-          effectiveStartDate
-          effectiveEndDate
+        route {
+          ${alerts}
         }
+        ${alerts}
       }
     }
-    alerts {
-      alertHash
-      alertHeaderTextTranslations {
-        text
-        language
-      }
-      alertDescriptionTextTranslations {
-        text
-        language
-      }
-      effectiveStartDate
-      effectiveEndDate
-    }`;
+    ${alerts}`;

@@ -195,8 +195,10 @@ module.exports = NodeHelper.create({
         if (!data) {
           return reject(`No ${stop.type ?? "stop"} data for ${stop.id}`);
         }
+        const { alerts, ...dataOther } = data;
         return resolve({
           ...stop,
+          alerts,
           data: {
             responseType: "TIMETABLE",
             gtfsId: data.gtfsId,

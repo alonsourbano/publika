@@ -475,7 +475,9 @@ Module.register("publika", {
       stop.searchStops
         .map((item) => {
           const [, stopId] = item.gtfsId.split(":");
-          const [, stationId] = item.parentStation.gtfsId.split(":");
+          const [, stationId] = item.parentStation
+            ? item.parentStation.gtfsId.split(":")
+            : "";
           return `<tr><td ${colspan}>${this.getStopNameWithVehicleMode(
             item,
             stopId
