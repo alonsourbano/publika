@@ -32,7 +32,6 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      cancelledTrips: [1000 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000],
       default: 20 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
@@ -42,7 +41,6 @@ Module.register("publika", {
   timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a",
   notifications: [],
   stoptimes: [],
-  cancelledTrips: [],
   apiKeyDeadLine: undefined,
 
   notificationReceived: function (notification, payload, sender) {
@@ -323,7 +321,7 @@ Module.register("publika", {
     var wrapper = document.createElement("div");
 
     if (!this.config.stops.length) {
-      wrapper.innerHTML = `${this.translate("SETUP_MODULE")}`;
+      wrapper.innerHTML = this.translate("SETUP_MODULE");
       wrapper.className = "dimmed light small";
       return wrapper;
     }
@@ -358,7 +356,7 @@ Module.register("publika", {
 
   getTable: function (stop) {
     if (!stop) {
-      return `< span > ${this.translate("ERROR_SCHEDULE")}</span > `;
+      return `<span>${this.translate("ERROR_SCHEDULE")}</span>`;
     }
     if (stop.disabled) {
       return "";
@@ -416,8 +414,7 @@ Module.register("publika", {
   },
 
   getStoptimes: function (stop) {
-    const stoptimes = this.getSingleDimensionArray(stop.stoptimes, "ts");
-    return stoptimes;
+    return this.getSingleDimensionArray(stop.stoptimes, "ts");
   },
 
   getRowForTimetable: function (stop, stoptime) {
@@ -476,21 +473,22 @@ Module.register("publika", {
     const headerRow = `<tr class="stop-header"><th ${colspan}><i class="fa-solid fa-magnifying-glass"></i> ${stop.id}</th></tr>`;
     const rows =
       stop.searchStops
-        .map(
-          (item) =>
-            `<tr><td ${colspan}>${this.getStopNameWithVehicleMode(
-              item,
-              item.gtfsId?.split(":").at(1)
-            )}</td></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
-              item,
-              stop.minutesFrom
-            )}</td></tr><tr class="stop-subheader"><td ${colspan}>${this.translate(
-              "STATION"
-            )}: ${item.parentStation?.gtfsId.split(":").at(1)} • ${item.parentStation?.name
+        .map((item) => {
+          const [, stopId] = item.gtfsId.split(":");
+          const [, stationId] = item.parentStation.gtfsId.split(":");
+          return `<tr><td ${colspan}>${this.getStopNameWithVehicleMode(
+            item,
+            stopId
+          )}</td></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
+            item,
+            0
+          )}</td></tr><tr class="stop-subheader"><td ${colspan}>${this.translate(
+            "STATION"
+          )}: ${stationId} • ${item.parentStation?.name
             }</td></tr><tr class="stop-subheader"><td ${colspan}>${this.translate(
               "CLUSTER"
-            )}: ${item.cluster?.gtfsId} • ${item.cluster?.name}</td></tr>`
-        )
+            )}: ${item.cluster?.gtfsId} • ${item.cluster?.name}</td></tr>`;
+        })
         .join('<tr><td title="getTableForStopSearch">&nbsp;</td></tr>') ||
       `<tr><td title="getTableForStopSearch"><i class="fa-solid fa-circle-exclamation"></i> ${this.translate(
         "NO_DATA"

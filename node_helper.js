@@ -42,7 +42,6 @@ module.exports = NodeHelper.create({
   initData: {},
 
   socketNotificationReceived: function (notification, payload) {
-    Log.log(notification, payload);
     const self = this;
     if (notification === "INIT") {
       this.initData = payload;
