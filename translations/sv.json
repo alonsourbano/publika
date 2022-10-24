@@ -20,5 +20,15 @@
   "GONDOLA": "Gondolbana",
   "RAIL": "Tåg",
   "SUBWAY": "Tunnelbana",
-  "TRAM": "Spårvagn"
+  "TRAM": "Spårvagn",
+  "NO_SERVICE": "Ingen service",
+  "REDUCED_SERVICE": "Minskad service",
+  "SIGNIFICANT_DELAYS": "Betydande förseningar",
+  "DETOUR": "Omväg",
+  "ADDITIONAL_SERVICE": "Ytterligare service",
+  "MODIFIED_SERVICE": "Ändrad service",
+  "OTHER_EFFECT": "Annan effekt",
+  "UNKNOWN_EFFECT": "Okänd effekt",
+  "STOP_MOVED": "Stopp flyttas",
+  "NO_EFFECT": "Ingen effekt"
 }

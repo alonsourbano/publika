@@ -46,7 +46,6 @@ module.exports = NodeHelper.create({
       Log.log(notification, payload);
     }
     const self = this;
-    Log.log(notification, payload);
 
     if (notification === "INIT") {
       this.initData = payload;

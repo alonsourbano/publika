@@ -39,6 +39,14 @@
   padding: 1px 2px;
 }
 
+.publika table .route-line {
+  text-align: center;
+}
+
+.publika table .route-line-icon {
+  font-size: 80%;
+}
+
 .publika table .stop-platform {
   border: 1px solid;
   border-radius: 4px;
@@ -57,6 +65,18 @@
 
 .publika table .cancelled-trip {
   text-decoration: line-through;
+}
+
+.publika table .alert {
+  font-size: 80%;
+}
+
+.publika table .alert-icon {
+  text-align: right;
+}
+
+.publika table .alert-effect {
+  text-align: left;
 }
 
 @keyframes blinker {

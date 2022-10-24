@@ -20,5 +20,15 @@
   "GONDOLA": "Gondola",
   "RAIL": "Rail",
   "SUBWAY": "Subway",
-  "TRAM": "Tram"
+  "TRAM": "Tram",
+  "NO_SERVICE": "No service",
+  "REDUCED_SERVICE": "Reduced service",
+  "SIGNIFICANT_DELAYS": "Significant delays",
+  "DETOUR": "Detour",
+  "ADDITIONAL_SERVICE": "Additional service",
+  "MODIFIED_SERVICE": "Modified service",
+  "OTHER_EFFECT": "Other effect",
+  "UNKNOWN_EFFECT": "Unknown effect",
+  "STOP_MOVED": "Stop moved",
+  "NO_EFFECT": "No effect"
 }
