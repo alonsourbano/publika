@@ -363,8 +363,8 @@ Module.register("publika", {
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
       return `${this.getHeaderRow(stop)}<tr><td ${colspan}>${stop.stoptimes?.error
-        ? '<i class="fa-solid fa-xmark"></i> '
-        : '<i class="fa-solid fa-spinner"></i> '
+          ? '<i class="fa-solid fa-xmark"></i> '
+          : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.stoptimes?.error ? "ERROR" : "LOADING"
         )}</td></tr>`;
@@ -376,7 +376,7 @@ Module.register("publika", {
 
   getTableForTimetable: function (stop) {
     const headerRow = this.getHeaderRow(stop);
-    const rows = this.getStoptimes(stop)
+    const rows = stop.stoptimes
       .map(
         (item) =>
           `<tr${item.cancelled
@@ -387,10 +387,7 @@ Module.register("publika", {
           }>${this.getRowForTimetable(stop, item)}</tr>`
       )
       .reduce((p, c) => `${p}${c}`, "");
-    const stopAlerts = this.getSingleDimensionArray(
-      stop.alerts,
-      "effectiveStartDate"
-    );
+    const stopAlerts = stop.alerts;
     const alerts =
       stopAlerts.length > 0
         ? stopAlerts.map(
@@ -399,22 +396,6 @@ Module.register("publika", {
         )
         : "";
     return `${headerRow}${rows}${alerts}`;
-  },
-
-  getSingleDimensionArray: function (items, sortKey) {
-    if (items.length === 0) {
-      return items;
-    }
-    if (!Array.isArray(items.at(0))) {
-      return items;
-    }
-    return items
-      .reduce((p, c) => [...p, ...c], [])
-      .sort((a, b) => a[sortKey] - b[sortKey]);
-  },
-
-  getStoptimes: function (stop) {
-    return this.getSingleDimensionArray(stop.stoptimes, "ts");
   },
 
   getRowForTimetable: function (stop, stoptime) {
@@ -475,7 +456,9 @@ Module.register("publika", {
       stop.searchStops
         .map((item) => {
           const [, stopId] = item.gtfsId.split(":");
-          const [, stationId] = item.parentStation.gtfsId.split(":");
+          const [, stationId] = item.parentStation
+            ? item.parentStation.gtfsId.split(":")
+            : "";
           return `<tr><td ${colspan}>${this.getStopNameWithVehicleMode(
             item,
             stopId

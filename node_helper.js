@@ -163,11 +163,19 @@ module.exports = NodeHelper.create({
           data: {
             responseType: "TIMETABLE",
             name: data.name,
-            vehicleMode: data.stops.map((item) => item.vehicleMode),
-            zoneId: data.stops.map((item) => item.zoneId),
-            alerts: data.stops.map((item) => item.alerts),
+            vehicleMode: data.stops
+              .map((item) => item.vehicleMode)
+              .reduce((p, c) => [...p, c], []),
+            zoneId: data.stops
+              .map((item) => item.zoneId)
+              .reduce((p, c) => [...p, c], []),
+            alerts: data.stops
+              .map((item) => item.alerts)
+              .reduce((p, c) => [...p, ...c], []),
             locationType: "CLUSTER",
-            stopTimes: data.stops.map((item) => processStopTimeData(item))
+            stopTimes: data.stops
+              .map((item) => processStopTimeData(item))
+              .reduce((p, c) => [...p, ...c], [])
           }
         });
       })
