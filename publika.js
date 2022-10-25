@@ -32,7 +32,7 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      default: [1 * 1000, 2 * 1000, 5 * 1000, 20 * 1000]
+      default: 20 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
@@ -562,7 +562,7 @@ Module.register("publika", {
       wantedField in alert && alert[wantedField]
         ? alert[wantedField].filter((item) => item.language === config.language)
         : undefined;
-    return wantedText.length ? wantedText.at(0).text : alert[field];
+    return wantedText?.length ? wantedText.at(0).text : alert[field];
   },
 
   getSubheaderRow: function (stop, minutesFrom) {
