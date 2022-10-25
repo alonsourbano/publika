@@ -22,4 +22,17 @@ module.exports = `
     }
     effectiveStartDate
     effectiveEndDate
+    route {
+      gtfsId
+      shortName
+      longName
+    }
+    trip {
+      gtfsId
+      routeShortName
+    }
+    stop {
+      gtfsId
+      name
+    }
   }`;

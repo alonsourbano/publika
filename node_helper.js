@@ -8,25 +8,24 @@ const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
-const processStopTimeData = (json) => {
-  if (!json || json.length < 1) {
-    return [];
-  }
-  let times = [];
-  json.stoptimesWithoutPatterns.forEach((value) => {
+const processStopTimeData = (json) =>
+  json.stoptimesWithoutPatterns.map((value) => {
     const time = getTime(value);
-    const stopTime = {
+    return {
       line: value.trip.routeShortName,
       headsign: value.headsign,
+      until: getUntil(time),
       time,
       realtime: value.realtime,
       cancelled: value.realtimeState === "CANCELED",
-      until: getUntil(time)
+      trip: {
+        gtfsId: value.trip.gtfsId,
+        route: {
+          gtfsId: value.trip.route.gtfsId
+        }
+      }
     };
-    times.push(stopTime);
   });
-  return times;
-};
 
 const getTime = (stoptime) =>
   moment(

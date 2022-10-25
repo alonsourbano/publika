@@ -26,8 +26,10 @@ module.exports = (count, startTime) => `
       serviceDay
       headsign
       trip {
+        gtfsId
         routeShortName
         route {
+          gtfsId
           ${alerts}
         }
         ${alerts}
