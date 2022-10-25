@@ -545,13 +545,13 @@ Module.register("publika", {
   },
 
   getAlertSeverityIcon: function (alertSeverityLevel) {
-    const defaultIcon = '<i class="fa-regular fa-circle-question"></i>';
+    const defaultIcon = '<i class="fa-solid fa-circle-question"></i>';
     return (
       new Map([
-        ["UNKNOWN_SEVERITY", '<i class="fa-regular fa-circle-question"></i>'],
-        ["INFO", '<i class="fa-solid fa-info"></i>'],
-        ["WARNING", '<i class="fa-solid fa-exclamation"></i>'],
-        ["SEVERE", '<i class="fa-solid fa-triangle-exclamation"></i>']
+        ["UNKNOWN_SEVERITY", '<i class="fa-solid fa-circle-question"></i>'],
+        ["INFO", '<i class="fa-solid fa-circle-info"></i>'],
+        ["WARNING", '<i class="fa-solid fa-triangle-exclamation"></i>'],
+        ["SEVERE", '<i class="fa-solid fa-radiation"></i>']
       ]).get(alertSeverityLevel) ?? defaultIcon
     );
   },
