@@ -71,14 +71,6 @@
   font-size: 80%;
 }
 
-.publika table .alert-icon {
-  text-align: right;
-}
-
-.publika table .alert-effect {
-  text-align: left;
-}
-
 @keyframes blinker {
   50% {
     opacity: 0;

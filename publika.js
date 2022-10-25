@@ -27,6 +27,7 @@ Module.register("publika", {
     stops: [],
     stopTimesCount: 5,
     fullHeadsign: false,
+    headsignViaTo: false,
     hslApiKey: undefined
   },
 
@@ -343,7 +344,7 @@ Module.register("publika", {
     wrapper.className = "light small timetable";
     var htmlElements = [...this.stoptimes.keys()]
       .map((index) => this.getTable(this.stoptimes.at(index)))
-      .join('<tr><td title="getDom">&nbsp;</td></tr>');
+      .join('<tr><td data-function="getDom">&nbsp;</td></tr>');
     wrapper.innerHTML = `${this.getNotifications()}<table id="stoptimes">${htmlElements}</table>`;
 
     return wrapper;
@@ -371,8 +372,8 @@ Module.register("publika", {
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
       return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.stoptimes?.error
-        ? '<i class="fa-solid fa-xmark"></i> '
-        : '<i class="fa-solid fa-spinner"></i> '
+          ? '<i class="fa-solid fa-xmark"></i> '
+          : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.stoptimes?.error ? "ERROR" : "LOADING"
         )}</td></tr>`;
@@ -400,10 +401,20 @@ Module.register("publika", {
   },
 
   getRowForTimetable: function (stop, stoptime) {
-    const columns = stoptime.cancelled
-      ? this.getCancelledRow(stop, stoptime)
-      : this.getScheduledRow(stop, stoptime);
-    return columns
+    return [
+      this.getRouteShortName(stoptime),
+      this.getHeadsign(stop, stoptime),
+      {
+        value: stoptime.cancelled
+          ? '<i class="fa-solid fa-xmark"></i>'
+          : this.getUntilText(stoptime),
+        style: "time smaller"
+      },
+      {
+        value: moment(stoptime.time).format(this.timeFormat),
+        style: "time"
+      }
+    ]
       .map(
         (column) =>
           `<td${column.style ? ` class="${column.style}"` : ""}>${column.value ?? column
@@ -412,49 +423,53 @@ Module.register("publika", {
       .reduce((p, c) => `${p}${c}`, "");
   },
 
-  getScheduledRow: function (stop, stoptime) {
-    return [
-      this.getRouteShortName(stoptime.line),
-      this.getHeadsign(stop, stoptime),
-      { value: this.getUntilText(stoptime), style: "time smaller" },
-      {
-        value: moment(stoptime.time).format(this.timeFormat),
-        style: "time"
-      }
-    ];
-  },
-
-  getCancelledRow: function (stop, stoptime) {
-    return [
-      this.getRouteShortName(stoptime.line),
-      this.getHeadsign(stop, stoptime),
-      { value: '<i class="fa-solid fa-xmark"></i>', style: "time" },
-      {
-        value: moment(stoptime.time).format(this.timeFormat),
-        style: "time"
-      }
-    ];
-  },
-
-  getRouteShortName: function (routeShortName) {
-    return routeShortName.length === 1
-      ? {
-        value: `<i class="fa-regular fa-${routeShortName.toLowerCase()}"></i>`,
+  getRouteShortName: function (stoptime) {
+    const defaultValue = { value: stoptime.line, style: "route-line" };
+    if (stoptime.cancelled) {
+      return defaultValue;
+    }
+    if (stoptime.line.length === 1) {
+      return {
+        value: `<i class="fa-regular fa-${stoptime.line.toLowerCase()}"></i>`,
         style: "route-line route-line-icon"
-      }
-      : routeShortName.length === 2
-        ? {
-          value: `<i class="fa-regular fa-${routeShortName
-            .charAt(0)
-            .toLowerCase()}"></i> <i class="fa-regular fa-${routeShortName
-              .charAt(1)
-              .toLowerCase()}"></i>`,
-          style: "route-line route-line-icon"
-        }
-        : { value: routeShortName, style: "route-line" };
+      };
+    }
+    if (stoptime.line.length === 2) {
+      return {
+        value: `<i class="fa-regular fa-${stoptime.line
+          .charAt(0)
+          .toLowerCase()}"></i> <i class="fa-regular fa-${stoptime.line
+            .charAt(1)
+            .toLowerCase()}"></i>`,
+        style: "route-line route-line-icon"
+      };
+    }
+    return defaultValue;
   },
 
   getHeadsign: function (stop, stoptime) {
+    const headsign = this.getHeadsignText(stop, stoptime);
+    const alerts = stop.alerts
+      .filter(
+        (alert) =>
+          alert.trip?.gtfsId === stoptime.trip?.gtfsId ||
+          alert.route?.gtfsId === stoptime.trip?.route?.gtfsId
+      )
+      .reduce(
+        (p, c) =>
+          p.some((item) => c.alertSeverityLevel === item)
+            ? p
+            : p.concat(c.alertSeverityLevel),
+        []
+      )
+      .map((alertSeverityLevel) =>
+        this.getAlertSeverityIcon(alertSeverityLevel, "alert")
+      )
+      .join(" ");
+    return alerts.length ? `${alerts} ${headsign}` : headsign;
+  },
+
+  getHeadsignText: function (stop, stoptime) {
     if (!stoptime.headsign) {
       return "";
     }
@@ -462,11 +477,16 @@ Module.register("publika", {
       typeof stop.fullHeadsign === "undefined"
         ? this.config.fullHeadsign
         : stop.fullHeadsign;
-    const [to] = stoptime.headsign.split(" via ");
-    const headsign = fullHeadsign ? stoptime.headsign : to;
-    return stoptime.alerts?.length > 0
-      ? `<i class="fa-solid fa-triangle-exclamation"></i> ${headsign}`
-      : headsign;
+    const headsignViaTo =
+      typeof stop.headsignViaTo === "undefined"
+        ? this.config.headsignViaTo
+        : stop.headsignViaTo;
+    const [to, via] = stoptime.headsign.split(" via ");
+    return fullHeadsign && via
+      ? headsignViaTo
+        ? `${via} - ${to}`
+        : `${to} via ${via}`
+      : to;
   },
 
   getTableForStopSearch: function (stop) {
@@ -491,7 +511,9 @@ Module.register("publika", {
               "CLUSTER"
             )}: ${item.cluster?.gtfsId} • ${item.cluster?.name}</td></tr>`;
         })
-        .join('<tr><td title="getTableForStopSearch">&nbsp;</td></tr>') ||
+        .join(
+          '<tr><td data-function="getTableForStopSearch">&nbsp;</td></tr>'
+        ) ||
       `<tr><td title="getTableForStopSearch"><i class="fa-solid fa-circle-exclamation"></i> ${this.translate(
         "NO_DATA"
       )}</td></tr>`;
@@ -521,7 +543,8 @@ Module.register("publika", {
       }><th colspan="${colspan}">${header}</th></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
         stop.meta,
         stop.minutesFrom
-      )}<td></tr>`;
+      )}<td>
+      </tr>`;
   },
 
   getAlerts: function (alerts) {
@@ -538,20 +561,26 @@ Module.register("publika", {
       )
       .map(
         (alert) =>
-          `<tr><td>&nbsp;</td><td class="alert alert-effect" colspan="${colspan - 1
+          `<tr><td data-function="getAlerts">&nbsp;</td><td class="alert" colspan="${colspan - 1
           }">${alert.icon} ${alert.effect}</td></tr>`
       )
       .join("");
   },
 
-  getAlertSeverityIcon: function (alertSeverityLevel) {
-    const defaultIcon = '<i class="fa-solid fa-circle-question"></i>';
+  getAlertSeverityIcon: function (alertSeverityLevel, style) {
+    const defaultIcon = `<i class="${style} fa-solid fa-circle-question"></i>`;
     return (
       new Map([
-        ["UNKNOWN_SEVERITY", '<i class="fa-solid fa-circle-question"></i>'],
-        ["INFO", '<i class="fa-solid fa-circle-info"></i>'],
-        ["WARNING", '<i class="fa-solid fa-triangle-exclamation"></i>'],
-        ["SEVERE", '<i class="fa-solid fa-radiation"></i>']
+        [
+          "UNKNOWN_SEVERITY",
+          `<i class="${style} fa-solid fa-circle-question"></i>`
+        ],
+        ["INFO", `<i class="${style} fa-solid fa-circle-info"></i>`],
+        [
+          "WARNING",
+          `<i class="${style} fa-solid fa-triangle-exclamation"></i>`
+        ],
+        ["SEVERE", `<i class="${style} fa-solid fa-radiation"></i>`]
       ]).get(alertSeverityLevel) ?? defaultIcon
     );
   },
@@ -593,7 +622,7 @@ Module.register("publika", {
         } ${this.translate("MINUTES_ABBR")}</span>`
       );
     }
-    return items.reduce((p, c) => `${p} ${c}`, "");
+    return items.join(" ");
   },
 
   getZoneId: function (zones) {

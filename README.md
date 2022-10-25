@@ -14,10 +14,11 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Displays stop code, platform/track and ticket zones
 - Supports english, finnish and swedish
 - Displays times in realtime when available
-  - If not, it displays the scheduled departure using the `~` symbol, like HSL does. 
+  - If not, displays the scheduled departure using the `~` symbol, like HSL does. 
 - Displays cancelled trips
 - Amount of stops to display can be configured for all stops or individually
-- Displays alerts for services and stops/stations
+- Displays disruptions (alerts) for services and stops/stations using different icons depending on severity
+- Blinks when service departure time is less than one minute
 - Can display one stop or the whole station or cluster
   - For example, one train station has at least two stops, aka tracks. Some bus stations has several platforms
 - Can set a delay start to a stop
@@ -42,6 +43,14 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Supports english, finnish and swedish:
 
 ![Supports english, finnish and swedish](docs/guxNoZSP.png)
+
+- Stop with disruptions (alerts):
+
+![Stop with disruptions (alerts) ](docs/fAdWddIW.png)
+
+- Stop with cancelled trips:
+
+![Stop with cancelled trips ](docs/JHWZPSOd.png)
 
 ## Getting started
 
@@ -69,6 +78,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023 | `"abc123def456ghi789"` |
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
 | fullHeadsign | no | `boolean` | `false` | Show complete headsign for all stops. For example: Töölön halli via Kallio | `true` |
+| headsignViaTo | no | `boolean` | `false` | Show headsign in the form via-destination for all stops. For example: Kallio - Töölön halli. Requires `fullHeadsign` to be `true` | `true` |
 | stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]` |
 
 `stops` can be an array of string, number, `StopObject` or a mix of them:
@@ -97,6 +107,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
+| headsignViaTo | no | `boolean` | Same as parent `headsignViaTo` if set, otherwise `false` | Show headsign in the form via-destination for this particular stop. For example: Myyrmäki - Lentoasema. Requires `fullHeadsign` to be `true` | `true` |
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false` |
 
 ## Glossary
