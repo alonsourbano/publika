@@ -8,32 +8,32 @@ const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
-function processStopTimeData(json) {
+const processStopTimeData = (json) => {
   if (!json || json.length < 1) {
     return [];
   }
   let times = [];
   json.stoptimesWithoutPatterns.forEach((value) => {
-    let datVal = new Date(
-      (value.serviceDay +
-        (value.realtimeDeparture ?? value.scheduledDeparture)) *
-      1000
-    );
-    const time = moment(datVal);
+    const time = getTime(value);
     const stopTime = {
       line: value.trip.routeShortName,
       headsign: value.headsign,
-      alerts: value.trip.alerts,
       time,
       realtime: value.realtime,
       cancelled: value.realtimeState === "CANCELED",
-      until: getUntil(time),
-      ts: datVal.getTime()
+      until: getUntil(time)
     };
     times.push(stopTime);
   });
   return times;
-}
+};
+
+const getTime = (stoptime) =>
+  moment(
+    (stoptime.serviceDay +
+      (stoptime.realtimeDeparture ?? stoptime.scheduledDeparture)) *
+    1000
+  );
 
 const getUntil = (date) =>
   Math.round(moment.duration(date.diff(moment())).asMinutes());
@@ -46,6 +46,7 @@ module.exports = NodeHelper.create({
       Log.log(notification, payload);
     }
     const self = this;
+
     if (notification === "INIT") {
       this.initData = payload;
       return this.sendSocketNotification("READY", undefined);
@@ -218,9 +219,37 @@ module.exports = NodeHelper.create({
             code: data.code,
             platformCode: data.platformCode,
             zoneId: data.zoneId,
-            alerts: data.alerts,
             locationType: data.locationType,
-            stopTimes: processStopTimeData(data)
+            stopTimes: processStopTimeData(data),
+            alerts: [
+              ...data.alerts,
+              ...data.routes
+                .map((route) => route.alerts)
+                .reduce((p, c) => [...p, ...c], []),
+              ...data.stops
+                .map((stop) => stop.alerts)
+                .reduce((p, c) => [...p, ...c], []),
+              ...data.stops
+                .map((stop) =>
+                  stop.routes
+                    .map((route) => route.alerts)
+                    .reduce((p, c) => [...p, ...c], [])
+                )
+                .reduce((p, c) => [...p, ...c], []),
+              ...data.stoptimesWithoutPatterns
+                .map((stoptime) => stoptime.trip.alerts)
+                .reduce((p, c) => [...p, ...c], []),
+              ...data.stoptimesWithoutPatterns
+                .map((stoptime) => stoptime.trip.route.alerts)
+                .reduce((p, c) => [...p, ...c], [])
+            ]
+              .map((alert) => ({
+                startTime: moment(alert.effectiveStartDate * 1000),
+                endTime: moment(alert.effectiveEndDate * 1000),
+                ...alert
+              }))
+              .sort((a, b) => moment(a.endTime).diff(moment(b.endTime)))
+              .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
           }
         });
       })

@@ -20,5 +20,15 @@
   "GONDOLA": "Gondolihissi",
   "RAIL": "Juna",
   "SUBWAY": "Metro",
-  "TRAM": "Raitiovaunu"
+  "TRAM": "Raitiovaunu",
+  "NO_SERVICE": "Ei palvelua",
+  "REDUCED_SERVICE": "Vähennetty palvelu",
+  "SIGNIFICANT_DELAYS": "Merkittäviä viivästyksiä",
+  "DETOUR": "Kiertotie",
+  "ADDITIONAL_SERVICE": "Lisäpalvelu",
+  "MODIFIED_SERVICE": "Muokattu palvelu",
+  "OTHER_EFFECT": "Muu vaikutus",
+  "UNKNOWN_EFFECT": "Tuntematon vaikutus",
+  "STOP_MOVED": "Pysäkki siirretty",
+  "NO_EFFECT": "Ei vaikutusta"
 }

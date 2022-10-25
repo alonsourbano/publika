@@ -20,7 +20,7 @@ const NOTIFICATION = {
   }
 };
 
-const colspan = 'colspan="4"';
+const colspan = 4;
 
 Module.register("publika", {
   defaults: {
@@ -45,14 +45,17 @@ Module.register("publika", {
   debug: config.logLevel.includes("DEBUG"),
 
   notificationReceived: function (notification, payload, sender) {
+    if (sender?.name === "clock") {
+      return;
+    }
+    if (this.debug) {
+      Log.log(notification, payload);
+    }
     if (notification === "ALL_MODULES_STARTED") {
       return this.onAllModulesStarted();
     }
     if (notification === "DOM_OBJECTS_CREATED") {
       return this.onDomObjectsCreated();
-    }
-    if (sender?.name === "clock") {
-      return;
     }
 
     Log.warn(`Unhandled notification ${notification}`, payload, sender);
@@ -189,6 +192,9 @@ Module.register("publika", {
   },
 
   socketNotificationReceived: function (notification, payload) {
+    if (this.debug) {
+      Log.log(notification, payload);
+    }
     if (
       this.checkSocketNotification(notification, NOTIFICATION.STOP_STOPTIMES)
     ) {
@@ -338,7 +344,7 @@ Module.register("publika", {
     var htmlElements = [...this.stoptimes.keys()]
       .map((index) => this.getTable(this.stoptimes.at(index)))
       .join('<tr><td title="getDom">&nbsp;</td></tr>');
-    wrapper.innerHTML = `${this.getNotifications()}<table>${htmlElements}</table>`;
+    wrapper.innerHTML = `${this.getNotifications()}<table id="stoptimes">${htmlElements}</table>`;
 
     return wrapper;
   },
@@ -353,7 +359,7 @@ Module.register("publika", {
           `<tr><td colspan="${colspan}">${notification.message}</td></tr>`
       )
       .reduce((p, c) => `${p}${c}`, "");
-    return `<div class="notification"><table>${notifications}</table></div>`;
+    return `<div class="notification"><table id="notifications">${notifications}</table></div>`;
   },
 
   getTable: function (stop) {
@@ -364,9 +370,9 @@ Module.register("publika", {
       return "";
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
-      return `${this.getHeaderRow(stop)}<tr><td ${colspan}>${stop.stoptimes?.error
-          ? '<i class="fa-solid fa-xmark"></i> '
-          : '<i class="fa-solid fa-spinner"></i> '
+      return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.stoptimes?.error
+        ? '<i class="fa-solid fa-xmark"></i> '
+        : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.stoptimes?.error ? "ERROR" : "LOADING"
         )}</td></tr>`;
@@ -389,14 +395,7 @@ Module.register("publika", {
           }>${this.getRowForTimetable(stop, item)}</tr>`
       )
       .reduce((p, c) => `${p}${c}`, "");
-    const stopAlerts = stop.alerts;
-    const alerts =
-      stopAlerts.length > 0
-        ? stopAlerts.map(
-          (alert) =>
-            `<tr><td ${colspan}><i class="fa-solid fa-triangle-exclamation"></i> ${alert.alertHash}<td></tr>`
-        )
-        : "";
+    const alerts = this.getAlerts(stop.alerts);
     return `${headerRow}${rows}${alerts}`;
   },
 
@@ -415,7 +414,7 @@ Module.register("publika", {
 
   getScheduledRow: function (stop, stoptime) {
     return [
-      stoptime.line,
+      this.getRouteShortName(stoptime.line),
       this.getHeadsign(stop, stoptime),
       { value: this.getUntilText(stoptime), style: "time smaller" },
       {
@@ -427,7 +426,7 @@ Module.register("publika", {
 
   getCancelledRow: function (stop, stoptime) {
     return [
-      stoptime.line,
+      this.getRouteShortName(stoptime.line),
       this.getHeadsign(stop, stoptime),
       { value: '<i class="fa-solid fa-xmark"></i>', style: "time" },
       {
@@ -435,6 +434,24 @@ Module.register("publika", {
         style: "time"
       }
     ];
+  },
+
+  getRouteShortName: function (routeShortName) {
+    return routeShortName.length === 1
+      ? {
+        value: `<i class="fa-regular fa-${routeShortName.toLowerCase()}"></i>`,
+        style: "route-line route-line-icon"
+      }
+      : routeShortName.length === 2
+        ? {
+          value: `<i class="fa-regular fa-${routeShortName
+            .charAt(0)
+            .toLowerCase()}"></i> <i class="fa-regular fa-${routeShortName
+              .charAt(1)
+              .toLowerCase()}"></i>`,
+          style: "route-line route-line-icon"
+        }
+        : { value: routeShortName, style: "route-line" };
   },
 
   getHeadsign: function (stop, stoptime) {
@@ -453,7 +470,7 @@ Module.register("publika", {
   },
 
   getTableForStopSearch: function (stop) {
-    const headerRow = `<tr class="stop-header"><th ${colspan}><i class="fa-solid fa-magnifying-glass"></i> ${stop.id}</th></tr>`;
+    const headerRow = `<tr class="stop-header"><th colspan="${colspan}"><i class="fa-solid fa-magnifying-glass"></i> ${stop.id}</th></tr>`;
     const rows =
       stop.searchStops
         .map((item) => {
@@ -461,16 +478,16 @@ Module.register("publika", {
           const [, stationId] = item.parentStation
             ? item.parentStation.gtfsId.split(":")
             : "";
-          return `<tr><td ${colspan}>${this.getStopNameWithVehicleMode(
+          return `<tr><td colspan="${colspan}">${this.getStopNameWithVehicleMode(
             item,
             stopId
-          )}</td></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
+          )}</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
             item,
             0
-          )}</td></tr><tr class="stop-subheader"><td ${colspan}>${this.translate(
+          )}</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.translate(
             "STATION"
           )}: ${stationId} • ${item.parentStation?.name
-            }</td></tr><tr class="stop-subheader"><td ${colspan}>${this.translate(
+            }</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.translate(
               "CLUSTER"
             )}: ${item.cluster?.gtfsId} • ${item.cluster?.name}</td></tr>`;
         })
@@ -495,16 +512,57 @@ Module.register("publika", {
 
   getHeaderRow: function (stop) {
     if (!stop.meta) {
-      return `<tr class="stop-header"><th ${colspan}>HSL:${stop.id}</th></tr>`;
+      return `<tr class="stop-header"><th colspan="${colspan}">HSL:${stop.id}</th></tr>`;
     }
     const header = stop.name
       ? `${this.getStopNameWithVehicleMode(stop.meta)} - ${stop.name}`
       : this.getStopNameWithVehicleMode(stop.meta);
     return `<tr class="stop-header"${this.debug ? ` data-source='${JSON.stringify(stop)}'` : ""
-      }><th ${colspan}>${header}</th></tr><tr class="stop-subheader"><td ${colspan}>${this.getSubheaderRow(
+      }><th colspan="${colspan}">${header}</th></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
         stop.meta,
         stop.minutesFrom
       )}<td></tr>`;
+  },
+
+  getAlerts: function (alerts) {
+    return alerts
+      .map((alert) => ({
+        id: `${alert.alertSeverityLevel}:${alert.alertEffect}`,
+        icon: this.getAlertSeverityIcon(alert.alertSeverityLevel),
+        effect: this.translate(alert.alertEffect),
+        text: this.getAlertTranslation(alert, "alertHeaderText")
+      }))
+      .reduce(
+        (p, c) => (p.some((item) => c.id === item.id) ? p : p.concat(c)),
+        []
+      )
+      .map(
+        (alert) =>
+          `<tr><td>&nbsp;</td><td class="alert alert-effect" colspan="${colspan - 1
+          }">${alert.icon} ${alert.effect}</td></tr>`
+      )
+      .join("");
+  },
+
+  getAlertSeverityIcon: function (alertSeverityLevel) {
+    const defaultIcon = '<i class="fa-solid fa-circle-question"></i>';
+    return (
+      new Map([
+        ["UNKNOWN_SEVERITY", '<i class="fa-solid fa-circle-question"></i>'],
+        ["INFO", '<i class="fa-solid fa-circle-info"></i>'],
+        ["WARNING", '<i class="fa-solid fa-triangle-exclamation"></i>'],
+        ["SEVERE", '<i class="fa-solid fa-radiation"></i>']
+      ]).get(alertSeverityLevel) ?? defaultIcon
+    );
+  },
+
+  getAlertTranslation: function (alert, field) {
+    const wantedField = `${field}Translations`;
+    const wantedText =
+      wantedField in alert && alert[wantedField]
+        ? alert[wantedField].filter((item) => item.language === config.language)
+        : undefined;
+    return wantedText?.length ? wantedText.at(0).text : alert[field];
   },
 
   getSubheaderRow: function (stop, minutesFrom) {
@@ -513,7 +571,7 @@ Module.register("publika", {
         ? [
           stop.desc,
           `<span class="stop-code">${stop.code}</span>`,
-          `<span class="stop-zone">${stop.zoneId}</span>`
+          `<span class="stop-zone"><i class="fa-solid fa-${stop.zoneId.toLowerCase()}"></i></span>`
         ]
         : [
           `<span class="stop-code">${this.translate(
@@ -544,7 +602,10 @@ Module.register("publika", {
     }
     zones = [...new Set(zones)];
     return zones
-      .map((zone) => `<span class="stop-zone">${zone}</span>`)
+      .map(
+        (zone) =>
+          `<span class="stop-zone"><i class="fa-solid fa-${zone.toLowerCase()}"></i></span>`
+      )
       .reduce((p, c) => `${p}${c}`, "");
   },
 
