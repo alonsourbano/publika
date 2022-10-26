@@ -5,6 +5,7 @@
   "NO_DATA": "Inga data",
   "NOW": "Nu",
   "SETUP_MODULE": "Ställ in stoppen i config.js",
+  "UPDATE_OLD": "Hållplatsdata har inte uppdaterats på ett tag",
   "CLUSTER": "Kluster har fasats ut",
   "PIER": "Pir",
   "PLATFORM": "Plattform",

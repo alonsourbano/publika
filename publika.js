@@ -29,6 +29,7 @@ Module.register("publika", {
   intervals: {
     update: {
       remainingTimeWatcher: 5 * 1000,
+      updateStatusWatcher: 5 * 1000,
       default: 45 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
@@ -41,6 +42,11 @@ Module.register("publika", {
   stoptimes: [],
   apiKeyDeadLine: undefined,
   debug: config.logLevel.includes("DEBUG"),
+  updateAgeLimitSeconds: 60,
+  backgroundTasks: {
+    remainingTimeWatcher: undefined,
+    updateStatusWatcher: undefined
+  },
 
   notificationReceived: function (notification, payload, sender) {
     if (sender?.name === "clock") {
@@ -62,6 +68,20 @@ Module.register("publika", {
   processStopStoptimesNotification: function (notification, payload) {
     const self = this;
     const { data, ...stop } = payload;
+
+    if (this.backgroundTasks.remainingTimeWatcher === undefined) {
+      Log.log(`Starting ${this.name}::remainingTimeWatcher`);
+      this.backgroundTasks.remainingTimeWatcher = setInterval(() => {
+        self.watchRemainingTime(self);
+      }, this.intervals.update.remainingTimeWatcher);
+    }
+
+    if (this.backgroundTasks.updateStatusWatcher === undefined) {
+      Log.log(`Starting ${this.name}::updateStatusWatcher`);
+      this.backgroundTasks.updateStatusWatcher = setInterval(() => {
+        self.watchUpdateStatus(self);
+      }, this.intervals.update.updateStatusWatcher);
+    }
 
     if (notification === NOTIFICATION.STOP_STOPTIMES.RESOLVE) {
       setTimeout(() => {
@@ -125,13 +145,8 @@ Module.register("publika", {
   },
 
   processReadyNotification: function (notification, payload) {
-    const self = this;
-
     if (notification === NOTIFICATION.READY.RESOLVE) {
       this.loaded = true;
-      setInterval(() => {
-        self.watchRemainingTime(self);
-      }, this.intervals.update.remainingTimeWatcher);
       return this.config.stops
         .filter((stop) => !stop.disabled)
         .forEach((stop) => {
@@ -220,6 +235,20 @@ Module.register("publika", {
   },
 
   watchRemainingTime: function (self) {
+    const remainingTimes = self.stoptimes
+      .map((stop) =>
+        stop.stoptimes
+          .filter((stoptime) => stoptime.remainingTime >= 0)
+          .map((stoptime) => (stoptime.remainingTime >= 0 ? 1 : 0))
+          .reduce((p, c) => p + c, 0)
+      )
+      .reduce((p, c) => p + c, 0);
+    if (remainingTimes === 0) {
+      clearInterval(this.backgroundTasks.remainingTimeWatcher);
+      this.backgroundTasks.remainingTimeWatcher = undefined;
+      Log.warn(`Shutting down ${this.name}::remainingTimeWatcher`);
+      return;
+    }
     self.stoptimes.forEach((stop) => {
       stop.stoptimes.forEach((stoptime) => {
         const time = moment(stoptime.time);
@@ -231,13 +260,33 @@ Module.register("publika", {
           if (self.debug) {
             Log.log(
               `watchRemainingTime updated remaining time for service ${stoptime.line
-              } departing from ${stop.meta.name} at ${time.format(self.timeFormat)}`
+              } departing from ${stop.meta.name} at ${time.format(
+                self.timeFormat
+              )}`
             );
           }
           self.updateDom();
         }
       });
     });
+  },
+
+  watchUpdateStatus: function (self) {
+    var shouldUpdateDom = false;
+    self.stoptimes.forEach((stop) => {
+      stop.updateAge = Math.round(
+        moment.duration(moment().diff(stop.updateTime)).asSeconds()
+      );
+      if (stop.updateAge > self.updateAgeLimitSeconds && !shouldUpdateDom) {
+        shouldUpdateDom = true;
+      }
+    });
+    if (shouldUpdateDom) {
+      clearInterval(this.backgroundTasks.updateStatusWatcher);
+      this.backgroundTasks.updateStatusWatcher = undefined;
+      Log.warn(`Shutting down ${this.name}::updateStatusWatcher`);
+      this.updateDom();
+    }
   },
 
   onAllModulesStarted: function () {
@@ -301,6 +350,8 @@ Module.register("publika", {
     this.stoptimes[index].meta = meta;
     this.stoptimes[index].alerts = alerts;
     this.stoptimes[index].searchStops = stops;
+    this.stoptimes[index].updateTime = moment();
+    this.stoptimes[index].updateAge = 0;
     this.updateDom();
   },
 
@@ -379,17 +430,23 @@ Module.register("publika", {
     if (stop.disabled) {
       return "";
     }
-    if (stop.stoptimes?.empty || stop.stoptimes?.error) {
-      return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.type === "cluster" || stop.stoptimes?.error
-        ? '<i class="fa-solid fa-xmark"></i> '
-        : '<i class="fa-solid fa-spinner"></i> '
-        }${this.translate(
-          stop.type === "cluster"
-            ? "CLUSTER"
-            : stop.stoptimes?.error
-              ? "ERROR"
-              : "LOADING"
-        )}</td></tr>`;
+    if (
+      stop.stoptimes?.empty ||
+      stop.stoptimes?.error ||
+      stop.type === "cluster"
+    ) {
+      var icon = '<i class="fa-solid fa-spinner"></i>';
+      var text = "LOADING";
+      if (stop.type === "cluster") {
+        icon = '<i class="fa-solid fa-xmark"></i>';
+        text = "CLUSTER";
+      } else if (stop.stoptimes?.error) {
+        icon = '<i class="fa-solid fa-xmark"></i>';
+        text = "ERROR";
+      }
+      return `${this.getHeaderRow(
+        stop
+      )}<tr><td colspan="${colspan}">${icon} ${this.translate(text)}</td></tr>`;
     }
     return stop.meta.responseType === "STOP_SEARCH"
       ? this.getTableForStopSearch(stop)
@@ -398,19 +455,37 @@ Module.register("publika", {
 
   getTableForTimetable: function (stop) {
     const headerRow = this.getHeaderRow(stop);
+    const aged = stop.updateAge > this.updateAgeLimitSeconds;
+    const agedText = aged
+      ? `<tr><td colspan="${colspan}"><i class="fa-solid fa-hourglass-end"></i> ${this.translate(
+        "UPDATE_OLD"
+      )}</td></tr>`
+      : "";
+    const hasRemainingTimes = stop.stoptimes.some(
+      (item) => item.remainingTime >= 0
+    );
+    const agedStyle = aged
+      ? hasRemainingTimes
+        ? "update-old"
+        : "update-older"
+      : undefined;
     const rows = stop.stoptimes
-      .map(
-        (item) =>
-          `<tr${item.cancelled
-            ? ' class="cancelled-trip"'
-            : item.remainingTime === 0
-              ? ' class="now"'
-              : ""
-          }>${this.getRowForTimetable(stop, item)}</tr>`
-      )
+      .map((item) => {
+        const styles = [];
+        if (item.cancelled) {
+          styles.push("cancelled-trip");
+        } else if (item.remainingTime === 0) {
+          styles.push("now");
+        }
+        if (agedStyle) {
+          styles.push(agedStyle);
+        }
+        return `<tr${styles.length ? ` class="${styles.join(" ")}"` : ""
+          }>${this.getRowForTimetable(stop, item)}</tr>`;
+      })
       .reduce((p, c) => `${p}${c}`, "");
-    const alerts = this.getAlerts(stop.alerts);
-    return `${headerRow}${rows}${alerts}`;
+    const alerts = this.getAlerts(stop.alerts, agedStyle);
+    return `${headerRow}${agedText}${rows}${alerts}`;
   },
 
   getRowForTimetable: function (stop, stoptime) {
@@ -463,11 +538,17 @@ Module.register("publika", {
   getHeadsign: function (stop, stoptime) {
     const headsign = this.getHeadsignText(stop, stoptime);
     const alerts = stop.alerts
+      .map((alert) => ({
+        ...alert,
+        startTime: moment(alert.startTime),
+        endTime: moment(alert.endTime)
+      }))
       .filter(
         (alert) =>
           alert.trip?.gtfsId === stoptime.trip?.gtfsId ||
           alert.route?.gtfsId === stoptime.trip?.route?.gtfsId
       )
+      .filter((alert) => moment().isBetween(alert.startTime, alert.endTime))
       .reduce(
         (p, c) =>
           p.some((item) => c.alertSeverityLevel === item)
@@ -557,12 +638,20 @@ Module.register("publika", {
       </tr>`;
   },
 
-  getAlerts: function (alerts) {
+  getAlerts: function (alerts, style = "") {
     return alerts
+      .map((alert) => ({
+        ...alert,
+        startTime: moment(alert.startTime),
+        endTime: moment(alert.endTime)
+      }))
+      .filter((alert) => moment().isBetween(alert.startTime, alert.endTime))
       .map((alert) => ({
         id: `${alert.alertSeverityLevel}:${alert.alertEffect}`,
         icon: this.getAlertSeverityIcon(alert.alertSeverityLevel),
         effect: this.translate(alert.alertEffect),
+        startTime: alert.startTime,
+        endTime: alert.endTime,
         text: this.getAlertTranslation(alert, "alertHeaderText")
       }))
       .reduce(
@@ -571,7 +660,8 @@ Module.register("publika", {
       )
       .map(
         (alert) =>
-          `<tr><td data-function="getAlerts">&nbsp;</td><td class="alert" colspan="${colspan - 1
+          `<tr${style ? ` class="${style}"` : ""
+          }><td data-function="getAlerts">&nbsp;</td><td class="alert" colspan="${colspan - 1
           }">${alert.icon} ${alert.effect}</td></tr>`
       )
       .join("");

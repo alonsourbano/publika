@@ -47,11 +47,15 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 - Stop with disruptions (alerts):
 
-![Stop with disruptions (alerts) ](docs/fAdWddIW.png)
+![Stop with disruptions](docs/fAdWddIW.png)
 
 - Stop with cancelled trips:
 
-![Stop with cancelled trips ](docs/JHWZPSOd.png)
+![Stop with cancelled trips](docs/JHWZPSOd.png)
+
+- Show a warning when data hasn't been fetched in a while (For example when MagicMirror<sup>2</sup> is down):
+
+![Show a warning when data hasn't been fetched in a while](docs/TYRrhdPr.png)
 
 ## Getting started
 
