@@ -2,7 +2,7 @@
 
 const NOTIFICATION = {
   NOTIFICATION: { RESOLVE: "NOTIFICATION", API_KEY: "API_KEY_NOTIFICATION" },
-  READY: { RESOLVE: "READY" },
+  READY: { RESOLVE: "READY", INIT: "INIT" },
   SEARCH_STOP: {
     FETCH: "SEARCH_STOP",
     REJECT: "REJECT_SEARCH_STOP",
@@ -12,6 +12,10 @@ const NOTIFICATION = {
     FETCH: "FETCH_STOP_STOPTIMES",
     REJECT: "REJECT_STOP_STOPTIMES",
     RESOLVE: "RESOLVE_STOP_STOPTIMES"
+  },
+  WATCHER: {
+    AWAKE: "AWAKE",
+    WAKE_UP: "WAKE_UP"
   }
 };
 
@@ -29,6 +33,7 @@ Module.register("publika", {
   intervals: {
     update: {
       remainingTimeWatcher: 5 * 1000,
+      socketWatcher: 100 * 1000,
       updateStatusWatcher: 5 * 1000,
       default: 45 * 1000
     },
@@ -45,6 +50,7 @@ Module.register("publika", {
   updateAgeLimitSeconds: 60,
   backgroundTasks: {
     remainingTimeWatcher: undefined,
+    socketWatcher: undefined,
     updateStatusWatcher: undefined
   },
 
@@ -195,6 +201,14 @@ Module.register("publika", {
     this.rejectSocketNotification(notification, payload);
   },
 
+  processWatcherNotification: function (notification, payload) {
+    if (notification === NOTIFICATION.WATCHER.AWAKE) {
+      return this.sendInitNotification();
+    }
+
+    this.rejectSocketNotification(notification, payload);
+  },
+
   checkSocketNotification: function (origin, target) {
     return Object.keys(target).some((item) => target[item] === origin);
   },
@@ -213,6 +227,9 @@ Module.register("publika", {
     }
     if (this.checkSocketNotification(notification, NOTIFICATION.READY)) {
       return this.processReadyNotification(notification, payload);
+    }
+    if (this.checkSocketNotification(notification, NOTIFICATION.WATCHER)) {
+      return this.processWatcherNotification(notification, payload);
     }
     if (this.checkSocketNotification(notification, NOTIFICATION.SEARCH_STOP)) {
       return this.processSearchStopNotification(notification, payload);
@@ -296,6 +313,19 @@ Module.register("publika", {
     }
   },
 
+  watchSocket: function () {
+    const lastUpdate = this.stoptimes
+      .map((stop) => stop.updateTime)
+      .reduce((p, c) => (p !== undefined && p.isAfter(c) ? p : c), undefined);
+    if (
+      lastUpdate.isBefore(
+        moment().subtract(this.updateAgeLimitSeconds, "seconds")
+      )
+    ) {
+      this.sendSocketNotification(NOTIFICATION.WATCHER.WAKE_UP, undefined);
+    }
+  },
+
   onAllModulesStarted: function () {
     if (!this.config.hslApiKey) {
       this.apiKeyDeadLine = moment("20230403", "YYYYMMDD");
@@ -316,7 +346,17 @@ Module.register("publika", {
   },
 
   onDomObjectsCreated: function () {
-    this.sendSocketNotification("INIT", {
+    this.sendInitNotification();
+    if (this.backgroundTasks.socketWatcher === undefined) {
+      Log.log(`Starting ${this.name}::socketWatcher`);
+      this.backgroundTasks.socketWatcher = setInterval(() => {
+        this.watchSocket();
+      }, this.intervals.update.socketWatcher);
+    }
+  },
+
+  sendInitNotification: function () {
+    this.sendSocketNotification(NOTIFICATION.READY.INIT, {
       digiTransit: {
         subscriptionKey: this.config.hslApiKey,
         apiUrl: this.digitransitApiUrl
@@ -325,7 +365,7 @@ Module.register("publika", {
     });
   },
 
-  notify: function (message, seconds = 3) {
+  notify: function (message, seconds) {
     const notification = {
       type: "notification",
       title: `Module ${this.name} (HSL timetables)`,

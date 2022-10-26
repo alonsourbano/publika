@@ -47,6 +47,10 @@ module.exports = NodeHelper.create({
       return this.sendSocketNotification("READY", undefined);
     }
 
+    if (notification === "WAKE_UP") {
+      return this.sendSocketNotification("AWAKE", undefined);
+    }
+
     if (notification === "FETCH_STOP_STOPTIMES") {
       return this.getStopSchedule(
         payload,
