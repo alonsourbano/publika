@@ -3,25 +3,24 @@ const moment = require("moment");
 const fetch = require("node-fetch");
 const NodeHelper = require("node_helper");
 const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
-const getHSLClusterTimesQuery = require("./HSL-graphiql/cluster-times");
 const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
 const processStopTimeData = (json) =>
-  json.stoptimesWithoutPatterns.map((value) => {
-    const time = getTime(value);
+  json.stoptimesWithoutPatterns.map((stoptime) => {
+    const time = getTime(stoptime);
     return {
-      line: value.trip.routeShortName,
-      headsign: value.headsign,
+      line: stoptime.trip.routeShortName,
+      headsign: stoptime.headsign,
       until: getUntil(time),
       time,
-      realtime: value.realtime,
-      cancelled: value.realtimeState === "CANCELED",
+      realtime: stoptime.realtime,
+      cancelled: stoptime.realtimeState === "CANCELED",
       trip: {
-        gtfsId: value.trip.gtfsId,
+        gtfsId: stoptime.trip.gtfsId,
         route: {
-          gtfsId: value.trip.route.gtfsId
+          gtfsId: stoptime.trip.route.gtfsId
         }
       }
     };
@@ -64,19 +63,6 @@ module.exports = NodeHelper.create({
       );
     }
 
-    if (notification === "FETCH_CLUSTER_STOPTIMES") {
-      return this.getClusterSchedule(
-        payload,
-        (data) => {
-          self.sendSocketNotification("RESOLVE_CLUSTER_STOPTIMES", data);
-        },
-        (error) => {
-          Log.error(error);
-          self.sendSocketNotification("REJECT_CLUSTER_STOPTIMES", payload);
-        }
-      );
-    }
-
     if (notification === "SEARCH_STOP") {
       return this.getStopSearch(
         payload,
@@ -90,8 +76,8 @@ module.exports = NodeHelper.create({
       );
     }
 
-    if (notification === "NOTIFICATION") {
-      return this.sendSocketNotification("NOTIFICATION", {
+    if (["NOTIFICATION", "API_KEY_NOTIFICATION"].includes(notification)) {
+      return this.sendSocketNotification(notification, {
         id: uuidv4(),
         ...payload
       });
@@ -134,54 +120,6 @@ module.exports = NodeHelper.create({
           });
         }
         return reject("No data");
-      })
-      .catch((error) => reject(error));
-  },
-
-  getClusterSchedule: function (stop, resolve, reject) {
-    fetch(this.initData.digiTransit.apiUrl, {
-      method: "POST",
-      body: getHSLClusterTimesQuery(
-        stop.id,
-        stop.stopTimesCount,
-        moment().unix() + (stop.minutesFrom || 0) * 60
-      ),
-      headers: this.getHeaders()
-    })
-      .then(NodeHelper.checkFetchStatus)
-      .then((response) => response.json())
-      .then((json) => {
-        if (!json.data) {
-          return reject("No data");
-        }
-        const data = json.data.cluster;
-        if (!data) {
-          return reject(`No cluster data for ${stop.id}`);
-        }
-        if (!(data.stops && data.stops.length > 0)) {
-          return reject(`Cluster ${stop.id} has no stop data`);
-        }
-        return resolve({
-          ...stop,
-          data: {
-            responseType: "TIMETABLE",
-            name: data.name,
-            vehicleMode: data.stops
-              .map((item) => item.vehicleMode)
-              .reduce((p, c) => [...p, c], []),
-            zoneId: data.stops
-              .map((item) => item.zoneId)
-              .reduce((p, c) => [...p, c], []),
-            alerts: data.stops
-              .map((item) => item.alerts)
-              .reduce((p, c) => [...p, ...c], []),
-            locationType: "CLUSTER",
-            stopTimes: data.stops
-              .map((item) => processStopTimeData(item))
-              .reduce((p, c) => [...p, ...c], [])
-              .sort((a, b) => moment(a.time).diff(moment(b.time)))
-          }
-        });
       })
       .catch((error) => reject(error));
   },
