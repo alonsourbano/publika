@@ -746,34 +746,43 @@ Module.register("publika", {
       stop.locationType === "STOP"
         ? [
           stop.desc,
-          `<span class="stop-code">${stop.code}</span>`,
-          `<span class="stop-zone"><i class="fa-solid fa-${stop.zoneId.toLowerCase()}"></i></span>`
+          { value: stop.code, style: "stop-code" },
+          {
+            value: `<i class="fa-solid fa-${stop.zoneId.toLowerCase()}"></i>`,
+            style: "stop-zone"
+          }
         ]
         : [
-          `<span class="stop-code">${this.translate(
-            stop.locationType
-          )}</span>`,
-          this.getZoneId(stop.zoneId)
+          {
+            value: this.translate(stop.locationType),
+            style: "stop-code"
+          },
+          { value: this.getZoneId(stop.zoneId), style: "stop-zone" }
         ];
     if (stop.platformCode) {
-      items.splice(
-        2,
-        0,
-        this.getPlatformText(stop.vehicleMode),
-        `<span class="stop-platform">${stop.platformCode}</span>`
-      );
+      items.splice(2, 0, this.getPlatformText(stop.vehicleMode), {
+        value: stop.platformCode,
+        style: "stop-platform"
+      });
     }
     if (minutesFrom) {
-      items.push(
-        `<span class="minutes-from">${minutesFrom > 0 ? `+${minutesFrom}` : minutesFrom
-        } ${this.translate("MINUTES_ABBR")}</span>`
-      );
+      items.push({
+        value: `${minutesFrom > 0 ? `+${minutesFrom}` : minutesFrom
+          } ${this.translate("MINUTES_ABBR")}`,
+        style: "minutes-from"
+      });
     }
-    return items.join(" ");
+    return items
+      .map(
+        (item) =>
+          `<span${item.style ? ` class="${item.style}"` : ""}>${item.value ?? item
+          }</span>`
+      )
+      .join("");
   },
 
   getZoneId: function (zone) {
-    return `<span class="stop-zone"><i class="fa-solid fa-${zone.toLowerCase()}"></i></span>`;
+    return `<i class="fa-solid fa-${zone.toLowerCase()}"></i>`;
   },
 
   getStopNameWithVehicleMode: function (data, includeId = undefined) {
