@@ -10,7 +10,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 ## Functionalities
 
-- Can display several stops, stations and/or clusters based on configuration
+- Can display several stops and/or stations based on configuration
 - Displays stop code, platform/track and ticket zones
 - Supports english, finnish and swedish
 - Displays times in realtime when available
@@ -19,15 +19,16 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Amount of stops to display can be configured for all stops or individually
 - Displays disruptions (alerts) for services and stops/stations using different icons depending on severity
 - Blinks when service departure time is less than one minute
-- Can display one stop or the whole station or cluster
+- Can display one stop or the whole station
   - For example, one train station has at least two stops, aka tracks. Some bus stations has several platforms
 - Can set a delay start to a stop
   - For example in the case the stop is a bit far, so services that start before the delay are not shown
-- Stop, station and cluster IDs can be searched directly with the module
+- Stop and station IDs can be searched directly with the module
 
 ## Dependencies
 
-- DigiTransit (**required**, free): https://digitransit.fi/en/developers/
+- An installation of [MagicMirror<sup>2</sup>](http://magicmirror.builders/)
+- DigiTransit (**required**, free): [https://digitransit.fi/en/developers/](https://digitransit.fi/en/developers/)
   - Used for fetching timetables and searching for stops and stations
   - Note: For now no API key is needed, but this would change in the future (april 2023)
 
@@ -101,9 +102,9 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
-| id | yes | `number` | `undefined` | ID of the stop, station or cluster | `1020453` |
+| id | yes | `number` | `undefined` | ID of the stop or station | `1020453` |
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
-| type | no | `string` | `stop` | Only needed when using station or cluster, otherwise assumed to be a stop | `"station"` |
+| type | no | `string` | `stop` | Only needed when using station, otherwise assumed to be a stop | `"station"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
@@ -116,4 +117,4 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | --- | --- |
 | Station | A location, which contains stops. For example, a train station is a station and its platforms are stops. |
 | Stop | A public transport stop, from which passengers can board vehicles. |
-| Cluster | A list of stops, grouped by name and proximity. |
+| Cluster | A list of stops, grouped by name and proximity. **Note that clusters are no longer available in this module** |
