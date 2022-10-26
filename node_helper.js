@@ -9,19 +9,20 @@ const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
 const processStopTimeData = (json) =>
-  json.stoptimesWithoutPatterns.map((value) => {
-    const time = getTime(value);
+  json.stoptimesWithoutPatterns.map((stoptime) => {
+    const time = getTime(stoptime);
     return {
-      line: value.trip.routeShortName,
-      headsign: value.headsign,
-      until: getUntil(time),
+      line: stoptime.trip.routeShortName,
+      headsign: stoptime.headsign,
       time,
-      realtime: value.realtime,
-      cancelled: value.realtimeState === "CANCELED",
+      realtime: stoptime.realtime,
+      until: getUntil(time),
+      delay: getDelay(time, stoptime),
+      cancelled: stoptime.realtimeState === "CANCELED",
       trip: {
-        gtfsId: value.trip.gtfsId,
+        gtfsId: stoptime.trip.gtfsId,
         route: {
-          gtfsId: value.trip.route.gtfsId
+          gtfsId: stoptime.trip.route.gtfsId
         }
       }
     };
@@ -34,8 +35,15 @@ const getTime = (stoptime) =>
     1000
   );
 
-const getUntil = (date) =>
-  Math.round(moment.duration(date.diff(moment())).asMinutes());
+const getUntil = (time) =>
+  Math.round(moment.duration(time.diff(moment())).asMinutes());
+
+const getDelay = (time, stoptime) =>
+  Math.round(
+    moment
+      .duration(time.diff(time.clone().add(stoptime.departureDelay, "seconds")))
+      .asMinutes()
+  );
 
 module.exports = NodeHelper.create({
   initData: {},

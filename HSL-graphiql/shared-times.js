@@ -24,6 +24,7 @@ module.exports = (count, startTime) => `
       realtime
       realtimeState
       serviceDay
+      departureDelay
       headsign
       trip {
         gtfsId
