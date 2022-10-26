@@ -30,7 +30,7 @@ Module.register("publika", {
     update: {
       remainingTimeWatcher: 5 * 1000,
       updateStatusWatcher: 5 * 1000,
-      default: 4500 * 1000
+      default: 45 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
