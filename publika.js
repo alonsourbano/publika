@@ -28,7 +28,7 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      default: 2000 * 1000
+      default: 20 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
@@ -138,8 +138,7 @@ Module.register("publika", {
           };
           if (stop.type === "cluster") {
             Log.error(this.translate("CLUSTER"));
-            this.notify(this.translate("CLUSTER"), 10);
-            return undefined;
+            return this.notify(this.translate("CLUSTER"), 10);
           }
           if (typeof stop === "string" && isNaN(stop)) {
             return this.sendSocketNotification(
@@ -355,8 +354,8 @@ Module.register("publika", {
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
       return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.type === "cluster" || stop.stoptimes?.error
-          ? '<i class="fa-solid fa-xmark"></i> '
-          : '<i class="fa-solid fa-spinner"></i> '
+        ? '<i class="fa-solid fa-xmark"></i> '
+        : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.type === "cluster"
             ? "CLUSTER"
@@ -609,29 +608,16 @@ Module.register("publika", {
     return items.join(" ");
   },
 
-  getZoneId: function (zones) {
-    if (!Array.isArray(zones)) {
-      zones = [zones];
-    }
-    zones = [...new Set(zones)];
-    return zones
-      .map(
-        (zone) =>
-          `<span class="stop-zone"><i class="fa-solid fa-${zone.toLowerCase()}"></i></span>`
-      )
-      .reduce((p, c) => `${p}${c}`, "");
+  getZoneId: function (zone) {
+    return `<span class="stop-zone"><i class="fa-solid fa-${zone.toLowerCase()}"></i></span>`;
   },
 
   getStopNameWithVehicleMode: function (data, includeId = undefined) {
     const name = includeId ? `${includeId} • ${data.name}` : data.name;
-    if (!Array.isArray(data.vehicleMode)) {
-      data.vehicleMode = [data.vehicleMode];
-    }
-    data.vehicleMode = [...new Set(data.vehicleMode)];
     return `${this.getVehicleModeIcon(data.vehicleMode)} ${name}`;
   },
 
-  getVehicleModeIcon: function (vehicleModes) {
+  getVehicleModeIcon: function (vehicleMode) {
     // Vehicle modes according to HSL documentation
     const map = new Map([
       ["AIRPLANE", "fa-solid fa-plane-up"],
@@ -646,14 +632,12 @@ Module.register("publika", {
       ["SUBWAY", "fa-solid fa-m"],
       ["TRAM", "fa-solid fa-train-tram"]
     ]);
-    return vehicleModes
-      .map((mode) => `<i class="${map.get(mode)}"></i>`)
-      .reduce((p, c) => `${p}${c}`, "");
+    return `<i class="${map.get(vehicleMode)}"></i>`;
   },
 
-  getPlatformText: function (vehicleModes) {
+  getPlatformText: function (vehicleMode) {
     const defaultText = this.translate("PLATFORM");
-    const map = new Map([
+    return new Map([
       ["AIRPLANE", defaultText],
       ["BICYCLE", defaultText],
       ["BUS", defaultText],
@@ -665,9 +649,6 @@ Module.register("publika", {
       ["RAIL", this.translate("TRACK")],
       ["SUBWAY", this.translate("TRACK")],
       ["TRAM", defaultText]
-    ]);
-    return vehicleModes
-      .map((mode) => map.get(mode))
-      .reduce((p, c) => `${p}${c}`, "");
+    ]).get(vehicleMode);
   }
 });
