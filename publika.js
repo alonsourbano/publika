@@ -30,7 +30,7 @@ Module.register("publika", {
     update: {
       remainingTimeWatcher: 5 * 1000,
       updateStatusWatcher: 5 * 1000,
-      default: 45 * 1000
+      default: 4500 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
@@ -72,7 +72,7 @@ Module.register("publika", {
     if (this.backgroundTasks.remainingTimeWatcher === undefined) {
       Log.log(`Starting ${this.name}::remainingTimeWatcher`);
       this.backgroundTasks.remainingTimeWatcher = setInterval(() => {
-        self.watchRemainingTime(self);
+        this.watchRemainingTime();
       }, this.intervals.update.remainingTimeWatcher);
     }
 
@@ -234,13 +234,15 @@ Module.register("publika", {
       : interval;
   },
 
-  watchRemainingTime: function (self) {
-    const remainingTimes = self.stoptimes
+  watchRemainingTime: function () {
+    const remainingTimes = this.stoptimes
       .map((stop) =>
         stop.stoptimes
-          .filter((stoptime) => stoptime.remainingTime >= 0)
-          .map((stoptime) => (stoptime.remainingTime >= 0 ? 1 : 0))
-          .reduce((p, c) => p + c, 0)
+          ? stop.stoptimes
+            .filter((stoptime) => stoptime.remainingTime >= 0)
+            .map((stoptime) => (stoptime.remainingTime >= 0 ? 1 : 0))
+            .reduce((p, c) => p + c, 0)
+          : 0
       )
       .reduce((p, c) => p + c, 0);
     if (remainingTimes === 0) {
@@ -249,25 +251,30 @@ Module.register("publika", {
       Log.warn(`Shutting down ${this.name}::remainingTimeWatcher`);
       return;
     }
-    self.stoptimes.forEach((stop) => {
-      stop.stoptimes.forEach((stoptime) => {
-        const time = moment(stoptime.time);
-        const previousRemainingTime = stoptime.remainingTime;
-        stoptime.remainingTime = Math.round(
-          moment.duration(time.diff(moment())).asMinutes()
-        );
-        if (previousRemainingTime !== stoptime.remainingTime) {
-          if (self.debug) {
-            Log.log(
-              `watchRemainingTime updated remaining time for service ${stoptime.line
-              } departing from ${stop.meta.name} at ${time.format(
-                self.timeFormat
-              )}`
-            );
+    this.stoptimes.forEach((stop) => {
+      if (!stop.stoptimes) {
+        return;
+      }
+      stop.stoptimes
+        .filter((stoptime) => stoptime.remainingTime >= 0)
+        .forEach((stoptime) => {
+          const time = moment(stoptime.time);
+          const previousRemainingTime = stoptime.remainingTime;
+          stoptime.remainingTime = Math.round(
+            moment.duration(time.diff(moment())).asMinutes()
+          );
+          if (previousRemainingTime !== stoptime.remainingTime) {
+            if (this.debug) {
+              Log.log(
+                `watchRemainingTime updated remaining time for service ${stoptime.line
+                } departing from ${stop.meta.name} at ${time.format(
+                  this.timeFormat
+                )}`
+              );
+            }
+            this.updateDom();
           }
-          self.updateDom();
-        }
-      });
+        });
     });
   },
 
