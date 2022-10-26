@@ -28,7 +28,8 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      default: 20 * 1000
+      remainingTimeWatcher: 5 * 1000,
+      default: 45 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
@@ -124,8 +125,13 @@ Module.register("publika", {
   },
 
   processReadyNotification: function (notification, payload) {
+    const self = this;
+
     if (notification === NOTIFICATION.READY.RESOLVE) {
       this.loaded = true;
+      setInterval(() => {
+        self.watchRemainingTime(self);
+      }, this.intervals.update.remainingTimeWatcher);
       return this.config.stops
         .filter((stop) => !stop.disabled)
         .forEach((stop) => {
@@ -211,6 +217,27 @@ Module.register("publika", {
         ? interval.at(0)
         : interval.shift()
       : interval;
+  },
+
+  watchRemainingTime: function (self) {
+    self.stoptimes.forEach((stop) => {
+      stop.stoptimes.forEach((stoptime) => {
+        const time = moment(stoptime.time);
+        const previousRemainingTime = stoptime.remainingTime;
+        stoptime.remainingTime = Math.round(
+          moment.duration(time.diff(moment())).asMinutes()
+        );
+        if (previousRemainingTime !== stoptime.remainingTime) {
+          if (self.debug) {
+            Log.log(
+              `watchRemainingTime updated remaining time for service ${stoptime.line
+              } departing from ${stop.meta.name} at ${time.format(self.timeFormat)}`
+            );
+          }
+          self.updateDom();
+        }
+      });
+    });
   },
 
   onAllModulesStarted: function () {
@@ -376,7 +403,7 @@ Module.register("publika", {
         (item) =>
           `<tr${item.cancelled
             ? ' class="cancelled-trip"'
-            : item.until === 0
+            : item.remainingTime === 0
               ? ' class="now"'
               : ""
           }>${this.getRowForTimetable(stop, item)}</tr>`
@@ -393,7 +420,7 @@ Module.register("publika", {
       {
         value: stoptime.cancelled
           ? '<i class="fa-solid fa-xmark"></i>'
-          : this.getUntilText(stoptime),
+          : this.getRemainingTimeText(stoptime),
         style: "time smaller"
       },
       {
@@ -503,15 +530,15 @@ Module.register("publika", {
     return `${headerRow}${rows}`;
   },
 
-  getUntilText: function (item) {
-    if (item.until > 20) {
+  getRemainingTimeText: function (item) {
+    if (item.remainingTime > 20) {
       return "";
     }
     const realtimeIcon = item.realtime ? "" : "~";
-    return item.until === 0
+    return item.remainingTime === 0
       ? `${realtimeIcon}${this.translate("NOW")}`
-      : item.until > 0
-        ? `${realtimeIcon}${item.until} ${this.translate("MINUTES_ABBR")}`
+      : item.remainingTime > 0
+        ? `${realtimeIcon}${item.remainingTime} ${this.translate("MINUTES_ABBR")}`
         : '<i class="fa-solid fa-clock-rotate-left"></i>';
   },
 
