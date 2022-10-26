@@ -372,8 +372,8 @@ Module.register("publika", {
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
       return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.stoptimes?.error
-          ? '<i class="fa-solid fa-xmark"></i> '
-          : '<i class="fa-solid fa-spinner"></i> '
+        ? '<i class="fa-solid fa-xmark"></i> '
+        : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
           stop.stoptimes?.error ? "ERROR" : "LOADING"
         )}</td></tr>`;
@@ -520,15 +520,17 @@ Module.register("publika", {
     return `${headerRow}${rows}`;
   },
 
-  getUntilText: function (item) {
-    if (item.until > 20) {
+  getUntilText: function (stoptime) {
+    if (stoptime.until > 20) {
       return "";
     }
-    const realtimeIcon = item.realtime ? "" : "~";
-    return item.until === 0
+    const realtimeIcon = stoptime.realtime ? "" : "~";
+    '<i class="fa-regular fa-calendar"></i>'
+    '<i class="fa-solid fa-clock"></i>'
+    return stoptime.until === 0
       ? `${realtimeIcon}${this.translate("NOW")}`
-      : item.until > 0
-        ? `${realtimeIcon}${item.until} ${this.translate("MINUTES_ABBR")}`
+      : stoptime.until > 0
+        ? `${realtimeIcon}${stoptime.until} ${this.translate("MINUTES_ABBR")}`
         : '<i class="fa-solid fa-clock-rotate-left"></i>';
   },
 
