@@ -4,7 +4,15 @@
 
 .publika .stop-subheader td {
   font-size: 70%;
-  padding: 3px 5px;
+  padding: 3px 0px;
+}
+
+.publika .stop-subheader td span {
+  margin-left: 5px;
+}
+
+.publika .stop-subheader td span:first-child {
+  margin-left: 0px;
 }
 
 .publika .notification {
