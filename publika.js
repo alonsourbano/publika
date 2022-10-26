@@ -1,12 +1,7 @@
 // Based on code from Sami Mäkinen (https://github.com/ZakarFin)
 
 const NOTIFICATION = {
-  CLUSTER_STOPTIMES: {
-    FETCH: "FETCH_CLUSTER_STOPTIMES",
-    REJECT: "REJECT_CLUSTER_STOPTIMES",
-    RESOLVE: "RESOLVE_CLUSTER_STOPTIMES"
-  },
-  NOTIFICATION: { RESOLVE: "NOTIFICATION" },
+  NOTIFICATION: { RESOLVE: "NOTIFICATION", API_KEY: "API_KEY_NOTIFICATION" },
   READY: { RESOLVE: "READY" },
   SEARCH_STOP: {
     FETCH: "SEARCH_STOP",
@@ -33,7 +28,7 @@ Module.register("publika", {
 
   intervals: {
     update: {
-      default: 20 * 1000
+      default: 2000 * 1000
     },
     retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
   },
@@ -41,6 +36,7 @@ Module.register("publika", {
     "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
   timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a",
   notifications: [],
+  sentNotifications: [],
   stoptimes: [],
   apiKeyDeadLine: undefined,
   debug: config.logLevel.includes("DEBUG"),
@@ -60,27 +56,6 @@ Module.register("publika", {
     }
 
     Log.warn(`Unhandled notification ${notification}`, payload, sender);
-  },
-
-  processClusterStoptimesNotification: function (notification, payload) {
-    const self = this;
-    const { data, ...stop } = payload;
-
-    if (notification === NOTIFICATION.CLUSTER_STOPTIMES.RESOLVE) {
-      setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.CLUSTER_STOPTIMES.FETCH, stop);
-      }, this.getNextInterval(this.intervals.update.default));
-      return this.updateStoptime(stop, data);
-    }
-
-    if (notification === NOTIFICATION.CLUSTER_STOPTIMES.REJECT) {
-      setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.CLUSTER_STOPTIMES.FETCH, stop);
-      }, this.getNextInterval(this.intervals.retry));
-      return this.rejectStoptime(stop.id);
-    }
-
-    this.rejectSocketNotification(notification, payload);
   },
 
   processStopStoptimesNotification: function (notification, payload) {
@@ -106,30 +81,43 @@ Module.register("publika", {
 
   processNotificationNotification: function (notification, payload) {
     const self = this;
+    const alertModuleAvailable = MM.getModules().some(
+      (module) => module.name === "alert" && !module.hidden
+    );
 
     if (notification === NOTIFICATION.NOTIFICATION.RESOLVE) {
+      if (alertModuleAvailable) {
+        return this.sendNotification("SHOW_ALERT", payload);
+      }
+
+      this.notifications.push(payload);
+      setTimeout(() => {
+        self.notifications = self.notifications.filter(
+          (item) => item.id !== payload.id
+        );
+        self.updateDom();
+      }, payload.timer);
+      return this.updateDom();
+    }
+
+    if (notification === NOTIFICATION.NOTIFICATION.API_KEY) {
       if (!this.config.hslApiKey) {
         const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
-        const alertModuleAvailable = MM.getModules().some(
-          (module) => module.name === "alert" && !module.hidden
-        );
         if (alertModuleAvailable) {
-          this.sendNotification("SHOW_ALERT", payload);
           if (deadLined) {
             this.notifications.push(payload);
           }
-        } else {
-          this.notifications.push(payload);
-          setTimeout(() => {
-            self.notifications = self.notifications.filter(
-              (item) => item.id !== payload.id
-            );
-            self.updateDom();
-          }, payload.timer);
-          this.updateDom();
+          return this.sendNotification("SHOW_ALERT", payload);
         }
+        this.notifications.push(payload);
+        setTimeout(() => {
+          self.notifications = self.notifications.filter(
+            (item) => item.id !== payload.id
+          );
+          self.updateDom();
+        }, payload.timer);
+        return this.updateDom();
       }
-      return;
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -149,10 +137,9 @@ Module.register("publika", {
             minutesFrom
           };
           if (stop.type === "cluster") {
-            return this.sendSocketNotification(
-              NOTIFICATION.CLUSTER_STOPTIMES.FETCH,
-              normalizedStop
-            );
+            Log.error(this.translate("CLUSTER"));
+            this.notify(this.translate("CLUSTER"), 10);
+            return undefined;
           }
           if (typeof stop === "string" && isNaN(stop)) {
             return this.sendSocketNotification(
@@ -201,11 +188,6 @@ Module.register("publika", {
     ) {
       return this.processStopStoptimesNotification(notification, payload);
     }
-    if (
-      this.checkSocketNotification(notification, NOTIFICATION.CLUSTER_STOPTIMES)
-    ) {
-      return this.processClusterStoptimesNotification(notification, payload);
-    }
     if (this.checkSocketNotification(notification, NOTIFICATION.NOTIFICATION)) {
       return this.processNotificationNotification(notification, payload);
     }
@@ -222,7 +204,6 @@ Module.register("publika", {
   rejectSocketNotification: function (notification, payload) {
     const errorMessage = `Unhandled socket notification ${notification}`;
     Log.error(errorMessage, payload);
-    throw Error(errorMessage);
   },
 
   getNextInterval: function (interval) {
@@ -238,14 +219,17 @@ Module.register("publika", {
       this.apiKeyDeadLine = moment("20230403", "YYYYMMDD");
       const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
       const hslNotification = {
-        title: "Module publika (HSL timetables)",
+        title: `Module ${this.name} (HSL timetables)`,
         type: deadLined ? undefined : "notification",
         message: `Starting from ${this.apiKeyDeadLine.format(
           "LL"
         )}, the use of the Digitransit APIs will require registration and use of API keys. Registration can be done at the Digitransit API portal.`,
-        timer: (deadLined ? 20 : 10) * 1000
+        timer: 15 * 1000
       };
-      this.sendSocketNotification("NOTIFICATION", hslNotification);
+      this.sendSocketNotification(
+        NOTIFICATION.NOTIFICATION.API_KEY,
+        hslNotification
+      );
     }
   },
 
@@ -260,27 +244,26 @@ Module.register("publika", {
   },
 
   notify: function (message, seconds = 3) {
-    const alertModuleAvailable = MM.getModules().some(
-      (module) => module.name === "alert" && !module.hidden
-    );
     const notification = {
       type: "notification",
+      title: `Module ${this.name} (HSL timetables)`,
       message,
       timer: seconds * 1000
     };
 
-    if (alertModuleAvailable) {
-      return this.sendNotification("SHOW_ALERT", notification);
+    if (
+      this.sentNotifications.some(
+        (item) => JSON.stringify(item) === JSON.stringify(notification)
+      )
+    ) {
+      return;
     }
 
-    this.notifications.push(notification);
-    setTimeout(() => {
-      this.notifications = this.notifications.filter(
-        (item) => item.id !== notification.id
-      );
-      this.updateDom();
-    }, notification.timer);
-    this.updateDom();
+    this.sendSocketNotification(
+      NOTIFICATION.NOTIFICATION.RESOLVE,
+      notification
+    );
+    this.sentNotifications.push(notification);
   },
 
   updateStoptime: function (stop, data) {
@@ -359,7 +342,7 @@ Module.register("publika", {
         (notification) =>
           `<tr><td colspan="${colspan}">${notification.message}</td></tr>`
       )
-      .reduce((p, c) => `${p}${c}`, "");
+      .join("");
     return `<div class="notification"><table id="notifications">${notifications}</table></div>`;
   },
 
@@ -371,11 +354,15 @@ Module.register("publika", {
       return "";
     }
     if (stop.stoptimes?.empty || stop.stoptimes?.error) {
-      return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.stoptimes?.error
+      return `${this.getHeaderRow(stop)}<tr><td colspan="${colspan}">${stop.type === "cluster" || stop.stoptimes?.error
           ? '<i class="fa-solid fa-xmark"></i> '
           : '<i class="fa-solid fa-spinner"></i> '
         }${this.translate(
-          stop.stoptimes?.error ? "ERROR" : "LOADING"
+          stop.type === "cluster"
+            ? "CLUSTER"
+            : stop.stoptimes?.error
+              ? "ERROR"
+              : "LOADING"
         )}</td></tr>`;
     }
     return stop.meta.responseType === "STOP_SEARCH"
@@ -506,10 +493,7 @@ Module.register("publika", {
             0
           )}</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.translate(
             "STATION"
-          )}: ${stationId} • ${item.parentStation?.name
-            }</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.translate(
-              "CLUSTER"
-            )}: ${item.cluster?.gtfsId} • ${item.cluster?.name}</td></tr>`;
+          )}: ${stationId} • ${item.parentStation?.name}</td></tr>`;
         })
         .join(
           '<tr><td data-function="getTableForStopSearch">&nbsp;</td></tr>'

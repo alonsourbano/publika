@@ -11,10 +11,13 @@
   float: right;
   position: absolute;
   background-color: black;
+  margin-bottom: 30px;
+}
+
+.publika .notification table td {
   border: 1px solid;
   border-radius: 5px;
-  padding: 5px;
-  margin-bottom: 30px;
+  padding: 30px;
 }
 
 .publika .now {
