@@ -5,6 +5,7 @@
   "NO_DATA": "Ei dataa",
   "NOW": "Nyt",
   "SETUP_MODULE": "Aseta pysäkit tiedostossa config.js",
+  "UPDATE_OLD": "Pysäkin tietoja ei ole päivitetty vähään aikaan",
   "CLUSTER": "Klusterit on poistettu käytöstä",
   "PIER": "Laituri",
   "PLATFORM": "Laituri",

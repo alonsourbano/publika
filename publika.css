@@ -70,6 +70,14 @@
   text-decoration: line-through;
 }
 
+.publika table .update-old {
+  opacity: 0.4;
+}
+
+.publika table .update-older {
+  opacity: 0.2;
+}
+
 .publika table .alert {
   font-size: 80%;
 }
