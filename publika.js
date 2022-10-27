@@ -407,7 +407,7 @@ Module.register("publika", {
           updateStatusWatcher: undefined
         },
         config: { ...this.defaults, ...module.config },
-        core: modules.length === 1 ?? module.config.core,
+        core: modules.length === 1 || module.config.core,
         intervals: {
           update: {
             remainingTimeWatcher: 5 * 1000,
