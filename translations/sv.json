@@ -1,6 +1,8 @@
 {
   "ERROR": "Fel",
   "ERROR_SCHEDULE": "Det gick inte att få schemat",
+  "CORE_ERROR_NONE": "Flera instanser har laddats, men ingen har angetts som kärna",
+  "CORE_ERROR_MULTIPLE": "Flera instanser laddade, men bara en måste ställas in som kärna",
   "MINUTES_ABBR": "min",
   "NO_DATA": "Inga data",
   "NOW": "Nu",

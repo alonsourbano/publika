@@ -1,6 +1,8 @@
 {
   "ERROR": "Virhe",
   "ERROR_SCHEDULE": "Aikataulua ei voitu saada",
+  "CORE_ERROR_NONE": "Useita esiintymiä ladattu, mutta yhtäkään ei ole asetettu coreksi",
+  "CORE_ERROR_MULTIPLE": "Useita esiintymiä ladattu, mutta vain yksi on asetettava coreksi",
   "MINUTES_ABBR": "min",
   "NO_DATA": "Ei dataa",
   "NOW": "Nyt",
