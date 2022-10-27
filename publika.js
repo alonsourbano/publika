@@ -82,12 +82,14 @@ Module.register("publika", {
     }
 
     if (notification === NOTIFICATION.STOP_STOPTIMES.RESOLVE) {
-      setTimeout(() => {
-        this.sendInstanceSocketNotification(
-          NOTIFICATION.STOP_STOPTIMES.FETCH,
-          stop
-        );
-      }, this.getNextInterval(instance.intervals.update.default));
+      if (this.validateStopRules(stop)) {
+        setTimeout(() => {
+          this.sendInstanceSocketNotification(
+            NOTIFICATION.STOP_STOPTIMES.FETCH,
+            stop
+          );
+        }, this.getNextInterval(instance.intervals.update.default));
+      }
       return this.updateStoptime(instance, stop, data);
     }
 
@@ -150,6 +152,7 @@ Module.register("publika", {
       instance.loaded = true;
       return instance.config.stops
         .filter((stop) => !stop.disabled)
+        .filter(this.validateStopRules)
         .forEach((stop) => {
           const { id, stopTimesCount, type, minutesFrom } = stop;
           const normalizedStop = {
@@ -427,6 +430,7 @@ Module.register("publika", {
         sentNotifications: [],
         stops: module.config.stops
           .filter((stop) => !stop.disabled)
+          .filter(this.validateStopRules)
           .map((stop) => ({
             ...stop,
             id: stop.id ?? stop,
@@ -532,6 +536,48 @@ Module.register("publika", {
     this.updateDom();
   },
 
+  validateStopRules: function (stop) {
+    if (!stop.rules) {
+      return true;
+    }
+    try {
+      for (const rule of stop.rules) {
+        if (rule.days) {
+          const visible = rule.days.includes(moment().day());
+          if (!visible) {
+            return false;
+          }
+        }
+        if (rule.startTime) {
+          const start = moment(rule.startTime, "HH:mm");
+          if (!start.isValid()) {
+            Log.error("Invalid date rule definition", rule.startTime);
+            return true;
+          }
+          const visible = start <= moment();
+          if (!visible) {
+            return false;
+          }
+        }
+        if (rule.endTime) {
+          const end = moment(rule.endTime, "HH:mm");
+          if (!end.isValid()) {
+            Log.error("Invalid date rule definition", rule.endTime);
+            return true;
+          }
+          const visible = end >= moment();
+          if (!visible) {
+            return false;
+          }
+        }
+      }
+    } catch (error) {
+      Log.error(error);
+    }
+
+    return true;
+  },
+
   getTranslations: function () {
     return {
       en: "translations/en.json",
@@ -552,14 +598,14 @@ Module.register("publika", {
     var wrapper = document.createElement("div");
     const instance = this.getInstance();
 
-    if (!instance.loaded) {
-      wrapper.innerHTML = this.translate("LOADING");
+    if (instance.coreError) {
+      wrapper.innerHTML = this.translate(instance.coreError);
       wrapper.className = "dimmed light small";
       return wrapper;
     }
 
-    if (instance.coreError) {
-      wrapper.innerHTML = this.translate(instance.coreError);
+    if (!instance.loaded) {
+      wrapper.innerHTML = this.translate("LOADING");
       wrapper.className = "dimmed light small";
       return wrapper;
     }
@@ -575,7 +621,6 @@ Module.register("publika", {
       .map((index) => this.getTable(instance.stops.at(index)))
       .join('<tr><td data-function="getDom">&nbsp;</td></tr>');
     wrapper.innerHTML = `${this.getNotifications()}<table id="stoptimes">${htmlElements}</table>`;
-
     return wrapper;
   },
 
@@ -624,6 +669,9 @@ Module.register("publika", {
   },
 
   getTableForTimetable: function (stop) {
+    if (!this.validateStopRules(stop)) {
+      return "";
+    }
     const headerRow = this.getHeaderRow(stop);
     const aged = stop.updateAge === true;
     const agedText = aged

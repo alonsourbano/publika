@@ -23,6 +23,8 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
   - For example, one train station has at least two stops, aka tracks. Some bus stations has several platforms
 - Can set a delay start to a stop
   - For example in the case the stop is a bit far, so services that start before the delay are not shown
+- Can set rules to show or hide stops
+  - For example show only on weekdays between 15:00 and 16:00
 - Stop and station IDs can be searched directly with the module
 - Can be loaded multiple times in different positions or in the same
 
@@ -119,7 +121,29 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
 | headsignViaTo | no | `boolean` | Same as parent `headsignViaTo` if set, otherwise `false` | Show headsign in the form via-destination for this particular stop. For example: Myyrmäki - Lentoasema. Requires `fullHeadsign` to be `true` | `true` |
+| rules | no | `array<StopRule>` | `undefined` | Set of rules for showing this stop/station | See below |
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false` |
+
+`StopRule`:
+| Option | Required | Type | Default | Description | Example |
+| --- | --- | --- | --- | --- | --- |
+| days | no | `array<number>` | `undefined` | Array of days that the stop/station will be shown. 0 is sunday, 1 is monday, 2 is tuesday, etc. | `[1, 4]` |
+| startTime | no | `string` | `undefined` | Start time. Must be in 24H format, regardless of other configurations | `15:30` |
+| endTime | no | `string` | `undefined` | End time. Must be in 24H format, regardless of other configurations | `16:15` |
+
+Examples: 
+```js
+[
+  {
+    days: [1, 2, 3, 4, 5],
+    startTime: "15:45",
+    endTime: "16:45"
+  },
+  {
+    days: [6, 0]
+  }
+]
+```
 
 ## Glossary
 
