@@ -1,6 +1,8 @@
 {
   "ERROR": "Error",
   "ERROR_SCHEDULE": "Couldn't get schedule",
+  "CORE_ERROR_NONE": "Multiple instances loaded, but none has been set as core",
+  "CORE_ERROR_MULTIPLE": "Multiple instances loaded, but only one has to be set as core",
   "MINUTES_ABBR": "min",
   "NO_DATA": "No data",
   "NOW": "Now",
