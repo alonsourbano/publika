@@ -15,6 +15,7 @@ const NOTIFICATION = {
   },
   WATCHER: {
     AWAKE: "AWAKE",
+    FEED: "FEED",
     WAKE_UP: "WAKE_UP"
   }
 };
@@ -200,6 +201,10 @@ Module.register("publika", {
   processWatcherNotification: function (instance, notification, payload) {
     if (notification === NOTIFICATION.WATCHER.AWAKE) {
       return this.sendInitNotification(instance);
+    }
+
+    if (notification === NOTIFICATION.WATCHER.FEED) {
+      return this.sendCoreInitNotification(instance);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -463,6 +468,11 @@ Module.register("publika", {
   },
 
   sendInitNotification: function (instance) {
+    this.sendCoreInitNotification(instance);
+    this.sendInstanceSocketNotification(NOTIFICATION.READY.INIT, undefined);
+  },
+
+  sendCoreInitNotification: function (instance) {
     if (instance.core && instance.id === this.identifier) {
       this.sendInstanceSocketNotification(NOTIFICATION.READY.CORE_INIT, {
         digiTransit: {
@@ -472,7 +482,6 @@ Module.register("publika", {
         debug: this.debug
       });
     }
-    this.sendInstanceSocketNotification(NOTIFICATION.READY.INIT, undefined);
   },
 
   sendInstanceSocketNotification: function (notification, payload) {

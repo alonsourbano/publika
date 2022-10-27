@@ -71,42 +71,17 @@ module.exports = NodeHelper.create({
     if (type === "FETCH_STOP_STOPTIMES") {
       return this.getStopSchedule(
         payload,
-        (data) => {
-          this.sendInstanceSocketNotification(
-            instance,
-            "RESOLVE_STOP_STOPTIMES",
-            data
-          );
-        },
-        (error) => {
-          Log.error(error);
-          this.sendInstanceSocketNotification(
-            instance,
-            "REJECT_STOP_STOPTIMES",
-            payload
-          );
-        }
+        (data) => this.resolve(instance, "RESOLVE_STOP_STOPTIMES", data),
+        (error) =>
+          this.reject(error, instance, "REJECT_STOP_STOPTIMES", payload)
       );
     }
 
     if (type === "SEARCH_STOP") {
       return this.getStopSearch(
         payload,
-        (data) => {
-          this.sendInstanceSocketNotification(
-            instance,
-            "RESOLVE_SEARCH_STOP",
-            data
-          );
-        },
-        (error) => {
-          Log.error(error);
-          this.sendInstanceSocketNotification(
-            instance,
-            "REJECT_SEARCH_STOP",
-            payload
-          );
-        }
+        (data) => this.resolve(instance, "RESOLVE_SEARCH_STOP", data),
+        (error) => this.reject(error, instance, "REJECT_SEARCH_STOP", payload)
       );
     }
 
@@ -125,6 +100,24 @@ module.exports = NodeHelper.create({
     this.sendSocketNotification(`${instance}::${notification}`, payload);
   },
 
+  resolve: function (instance, notification, data) {
+    this.sendInstanceSocketNotification(instance, notification, data);
+  },
+
+  reject: function (error, instance, notification, payload) {
+    Log.error(error);
+    this.sendInstanceSocketNotification(instance, notification, payload);
+    if (!this.initData?.digiTransit) {
+      if (this.initData?.instances && this.initData.instances.length) {
+        this.initData.instances.forEach((item) => {
+          this.sendInstanceSocketNotification(item, "FEED", undefined);
+        });
+      } else {
+        this.sendInstanceSocketNotification(instance, "FEED", undefined);
+      }
+    }
+  },
+
   getHeaders: function () {
     return {
       "Content-Type": "application/graphql",
@@ -140,94 +133,102 @@ module.exports = NodeHelper.create({
   },
 
   getStopSearch: function (stop, resolve, reject) {
-    fetch(this.initData.digiTransit.apiUrl, {
-      method: "POST",
-      body: getHSLStopSearchQuery(stop.id),
-      headers: this.getHeaders()
-    })
-      .then(NodeHelper.checkFetchStatus)
-      .then((response) => response.json())
-      .then((json) => {
-        if (json.data) {
-          return resolve({
-            ...stop,
-            data: {
-              responseType: "STOP_SEARCH",
-              stops: json.data.stops
-            }
-          });
-        }
-        return reject("No data");
+    try {
+      fetch(this.initData.digiTransit.apiUrl, {
+        method: "POST",
+        body: getHSLStopSearchQuery(stop.id),
+        headers: this.getHeaders()
       })
-      .catch((error) => reject(error));
+        .then(NodeHelper.checkFetchStatus)
+        .then((response) => response.json())
+        .then((json) => {
+          if (json.data) {
+            return resolve({
+              ...stop,
+              data: {
+                responseType: "STOP_SEARCH",
+                stops: json.data.stops
+              }
+            });
+          }
+          return reject("No data");
+        })
+        .catch((error) => reject(error));
+    } catch (error) {
+      return reject(error);
+    }
   },
 
   getStopSchedule: function (stop, resolve, reject) {
-    fetch(this.initData.digiTransit.apiUrl, {
-      method: "POST",
-      body: getHSLStopTimesQuery(
-        stop.type ?? "stop",
-        stop.id,
-        stop.stopTimesCount,
-        moment().unix() + (stop.minutesFrom || 0) * 60
-      ),
-      headers: this.getHeaders()
-    })
-      .then(NodeHelper.checkFetchStatus)
-      .then((response) => response.json())
-      .then((json) => {
-        if (!json.data) {
-          return reject("No data");
-        }
-        const data = stop.type ? json.data[stop.type] : json.data.stop;
-        if (!data) {
-          return reject(`No ${stop.type ?? "stop"} data for ${stop.id}`);
-        }
-        return resolve({
-          ...stop,
-          data: {
-            responseType: "TIMETABLE",
-            gtfsId: data.gtfsId,
-            name: data.name,
-            vehicleMode: data.vehicleMode,
-            desc: data.desc,
-            code: data.code,
-            platformCode: data.platformCode,
-            zoneId: data.zoneId,
-            locationType: data.locationType,
-            stopTimes: processStopTimeData(data),
-            alerts: [
-              ...data.alerts,
-              ...data.routes
-                .map((route) => route.alerts)
-                .reduce((p, c) => [...p, ...c], []),
-              ...data.stops
-                .map((stop) => stop.alerts)
-                .reduce((p, c) => [...p, ...c], []),
-              ...data.stops
-                .map((stop) =>
-                  stop.routes
-                    .map((route) => route.alerts)
-                    .reduce((p, c) => [...p, ...c], [])
-                )
-                .reduce((p, c) => [...p, ...c], []),
-              ...data.stoptimesWithoutPatterns
-                .map((stoptime) => stoptime.trip.alerts)
-                .reduce((p, c) => [...p, ...c], []),
-              ...data.stoptimesWithoutPatterns
-                .map((stoptime) => stoptime.trip.route.alerts)
-                .reduce((p, c) => [...p, ...c], [])
-            ]
-              .map((alert) => ({
-                startTime: moment(alert.effectiveStartDate * 1000),
-                endTime: moment(alert.effectiveEndDate * 1000),
-                ...alert
-              }))
-              .sort((a, b) => moment(a.endTime).diff(moment(b.endTime)))
-              .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
-          }
-        });
+    try {
+      fetch(this.initData.digiTransit.apiUrl, {
+        method: "POST",
+        body: getHSLStopTimesQuery(
+          stop.type ?? "stop",
+          stop.id,
+          stop.stopTimesCount,
+          moment().unix() + (stop.minutesFrom || 0) * 60
+        ),
+        headers: this.getHeaders()
       })
-      .catch((error) => reject(error));
+        .then(NodeHelper.checkFetchStatus)
+        .then((response) => response.json())
+        .then((json) => {
+          if (!json.data) {
+            return reject("No data");
+          }
+          const data = stop.type ? json.data[stop.type] : json.data.stop;
+          if (!data) {
+            return reject(`No ${stop.type ?? "stop"} data for ${stop.id}`);
+          }
+          return resolve({
+            ...stop,
+            data: {
+              responseType: "TIMETABLE",
+              gtfsId: data.gtfsId,
+              name: data.name,
+              vehicleMode: data.vehicleMode,
+              desc: data.desc,
+              code: data.code,
+              platformCode: data.platformCode,
+              zoneId: data.zoneId,
+              locationType: data.locationType,
+              stopTimes: processStopTimeData(data),
+              alerts: [
+                ...data.alerts,
+                ...data.routes
+                  .map((route) => route.alerts)
+                  .reduce((p, c) => [...p, ...c], []),
+                ...data.stops
+                  .map((stop) => stop.alerts)
+                  .reduce((p, c) => [...p, ...c], []),
+                ...data.stops
+                  .map((stop) =>
+                    stop.routes
+                      .map((route) => route.alerts)
+                      .reduce((p, c) => [...p, ...c], [])
+                  )
+                  .reduce((p, c) => [...p, ...c], []),
+                ...data.stoptimesWithoutPatterns
+                  .map((stoptime) => stoptime.trip.alerts)
+                  .reduce((p, c) => [...p, ...c], []),
+                ...data.stoptimesWithoutPatterns
+                  .map((stoptime) => stoptime.trip.route.alerts)
+                  .reduce((p, c) => [...p, ...c], [])
+              ]
+                .map((alert) => ({
+                  startTime: moment(alert.effectiveStartDate * 1000),
+                  endTime: moment(alert.effectiveEndDate * 1000),
+                  ...alert
+                }))
+                .sort((a, b) => moment(a.endTime).diff(moment(b.endTime)))
+                .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
+            }
+          });
+        })
+        .catch((error) => reject(error));
+    } catch (error) {
+      return reject(error);
+    }
   }
 });
