@@ -34,51 +34,84 @@ const getRemainingTime = (time) =>
   Math.round(moment.duration(time.diff(moment())).asMinutes());
 
 module.exports = NodeHelper.create({
-  initData: {},
+  initData: {
+    core: undefined,
+    instances: []
+  },
 
   socketNotificationReceived: function (notification, payload) {
+    const [instance, type] = notification.split("::");
+
+    if (type === "CORE_INIT") {
+      Log.log(instance, type);
+      this.initData = { ...this.initData, ...payload, core: instance };
+      return;
+    }
+
     if (this.initData?.debug) {
-      Log.log(notification, payload);
-    }
-    const self = this;
-
-    if (notification === "INIT") {
-      this.initData = payload;
-      return this.sendSocketNotification("READY", undefined);
+      Log.log(instance, type, payload);
     }
 
-    if (notification === "WAKE_UP") {
-      return this.sendSocketNotification("AWAKE", undefined);
+    if (type === "INIT") {
+      if (!this.initData?.instances.includes(instance)) {
+        this.initData.instances.push(instance);
+      }
+      return this.sendInstanceSocketNotification(instance, "READY", undefined);
     }
 
-    if (notification === "FETCH_STOP_STOPTIMES") {
+    if (type === "WAKE_UP") {
+      if (this.initData?.instances?.length) {
+        return this.initData.instances.forEach((item) =>
+          this.sendInstanceSocketNotification(item, "AWAKE", undefined)
+        );
+      }
+      return this.sendInstanceSocketNotification(instance, "AWAKE", undefined);
+    }
+
+    if (type === "FETCH_STOP_STOPTIMES") {
       return this.getStopSchedule(
         payload,
         (data) => {
-          self.sendSocketNotification("RESOLVE_STOP_STOPTIMES", data);
+          this.sendInstanceSocketNotification(
+            instance,
+            "RESOLVE_STOP_STOPTIMES",
+            data
+          );
         },
         (error) => {
           Log.error(error);
-          self.sendSocketNotification("REJECT_STOP_STOPTIMES", payload);
+          this.sendInstanceSocketNotification(
+            instance,
+            "REJECT_STOP_STOPTIMES",
+            payload
+          );
         }
       );
     }
 
-    if (notification === "SEARCH_STOP") {
+    if (type === "SEARCH_STOP") {
       return this.getStopSearch(
         payload,
         (data) => {
-          self.sendSocketNotification("RESOLVE_SEARCH_STOP", data);
+          this.sendInstanceSocketNotification(
+            instance,
+            "RESOLVE_SEARCH_STOP",
+            data
+          );
         },
         (error) => {
           Log.error(error);
-          self.sendSocketNotification("REJECT_SEARCH_STOP", payload);
+          this.sendInstanceSocketNotification(
+            instance,
+            "REJECT_SEARCH_STOP",
+            payload
+          );
         }
       );
     }
 
-    if (["NOTIFICATION", "API_KEY_NOTIFICATION"].includes(notification)) {
-      return this.sendSocketNotification(notification, {
+    if (["NOTIFICATION", "API_KEY_NOTIFICATION"].includes(type)) {
+      return this.sendInstanceSocketNotification(instance, type, {
         id: uuidv4(),
         ...payload
       });
@@ -86,6 +119,10 @@ module.exports = NodeHelper.create({
 
     Log.error(`Unhandled socket notification ${notification}`, payload);
     throw Error(`Unhandled socket notification ${notification}`);
+  },
+
+  sendInstanceSocketNotification: function (instance, notification, payload) {
+    this.sendSocketNotification(`${instance}::${notification}`, payload);
   },
 
   getHeaders: function () {

@@ -2,7 +2,7 @@
 
 const NOTIFICATION = {
   NOTIFICATION: { RESOLVE: "NOTIFICATION", API_KEY: "API_KEY_NOTIFICATION" },
-  READY: { RESOLVE: "READY", INIT: "INIT" },
+  READY: { RESOLVE: "READY", INIT: "INIT", CORE_INIT: "CORE_INIT" },
   SEARCH_STOP: {
     FETCH: "SEARCH_STOP",
     REJECT: "REJECT_SEARCH_STOP",
@@ -30,32 +30,19 @@ Module.register("publika", {
     hslApiKey: undefined
   },
 
-  intervals: {
-    update: {
-      remainingTimeWatcher: 5 * 1000,
-      socketWatcher: 100 * 1000,
-      updateStatusWatcher: 5 * 1000,
-      default: 45 * 1000
-    },
-    retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
-  },
   digitransitApiUrl:
     "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
   timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a",
-  notifications: [],
-  sentNotifications: [],
-  stoptimes: [],
+  instances: [],
   apiKeyDeadLine: undefined,
   debug: config.logLevel.includes("DEBUG"),
   updateAgeLimitSeconds: 60,
-  backgroundTasks: {
-    remainingTimeWatcher: undefined,
-    socketWatcher: undefined,
-    updateStatusWatcher: undefined
-  },
 
   notificationReceived: function (notification, payload, sender) {
     if (sender?.name === "clock") {
+      return;
+    }
+    if (sender?.name === "publika") {
       return;
     }
     if (this.debug) {
@@ -65,49 +52,58 @@ Module.register("publika", {
       return this.onAllModulesStarted();
     }
     if (notification === "DOM_OBJECTS_CREATED") {
-      return this.onDomObjectsCreated();
+      return;
+    }
+    if (notification === "MODULE_DOM_CREATED") {
+      return;
     }
 
     Log.warn(`Unhandled notification ${notification}`, payload, sender);
   },
 
-  processStopStoptimesNotification: function (notification, payload) {
-    const self = this;
+  processStopStoptimesNotification: function (instance, notification, payload) {
     const { data, ...stop } = payload;
 
-    if (this.backgroundTasks.remainingTimeWatcher === undefined) {
-      Log.log(`Starting ${this.name}::remainingTimeWatcher`);
-      this.backgroundTasks.remainingTimeWatcher = setInterval(() => {
+    if (instance.backgroundTasks.remainingTimeWatcher === undefined) {
+      Log.log(
+        `Starting ${this.name}::${this.identifier}::remainingTimeWatcher`
+      );
+      instance.backgroundTasks.remainingTimeWatcher = setInterval(() => {
         this.watchRemainingTime();
-      }, this.intervals.update.remainingTimeWatcher);
+      }, instance.intervals.update.remainingTimeWatcher);
     }
 
-    if (this.backgroundTasks.updateStatusWatcher === undefined) {
-      Log.log(`Starting ${this.name}::updateStatusWatcher`);
-      this.backgroundTasks.updateStatusWatcher = setInterval(() => {
-        self.watchUpdateStatus(self);
-      }, this.intervals.update.updateStatusWatcher);
+    if (instance.backgroundTasks.updateStatusWatcher === undefined) {
+      Log.log(`Starting ${this.name}::${this.identifier}::updateStatusWatcher`);
+      instance.backgroundTasks.updateStatusWatcher = setInterval(() => {
+        this.watchUpdateStatus();
+      }, instance.intervals.update.updateStatusWatcher);
     }
 
     if (notification === NOTIFICATION.STOP_STOPTIMES.RESOLVE) {
       setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.STOP_STOPTIMES.FETCH, stop);
-      }, this.getNextInterval(this.intervals.update.default));
-      return this.updateStoptime(stop, data);
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.STOP_STOPTIMES.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.update.default));
+      return this.updateStoptime(instance, stop, data);
     }
 
     if (notification === NOTIFICATION.STOP_STOPTIMES.REJECT) {
       setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.STOP_STOPTIMES.FETCH, stop);
-      }, this.getNextInterval(this.intervals.retry));
-      return this.rejectStoptime(stop.id);
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.STOP_STOPTIMES.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.retry));
+      return this.rejectStoptime(instance, stop.id);
     }
 
     this.rejectSocketNotification(notification, payload);
   },
 
-  processNotificationNotification: function (notification, payload) {
-    const self = this;
+  processNotificationNotification: function (instance, notification, payload) {
     const alertModuleAvailable = MM.getModules().some(
       (module) => module.name === "alert" && !module.hidden
     );
@@ -117,49 +113,47 @@ Module.register("publika", {
         return this.sendNotification("SHOW_ALERT", payload);
       }
 
-      this.notifications.push(payload);
+      instance.notifications.push(payload);
       setTimeout(() => {
-        self.notifications = self.notifications.filter(
+        instance.notifications = instance.notifications.filter(
           (item) => item.id !== payload.id
         );
-        self.updateDom();
+        this.updateDom();
       }, payload.timer);
       return this.updateDom();
     }
 
     if (notification === NOTIFICATION.NOTIFICATION.API_KEY) {
-      if (!this.config.hslApiKey) {
-        const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
-        if (alertModuleAvailable) {
-          if (deadLined) {
-            this.notifications.push(payload);
-          }
-          return this.sendNotification("SHOW_ALERT", payload);
+      const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
+      if (alertModuleAvailable) {
+        if (deadLined) {
+          instance.notifications.push(payload);
         }
-        this.notifications.push(payload);
-        setTimeout(() => {
-          self.notifications = self.notifications.filter(
-            (item) => item.id !== payload.id
-          );
-          self.updateDom();
-        }, payload.timer);
-        return this.updateDom();
+        return this.sendNotification("SHOW_ALERT", payload);
       }
+      instance.notifications.push(payload);
+      setTimeout(() => {
+        instance.notifications = instance.notifications.filter(
+          (item) => item.id !== payload.id
+        );
+        this.updateDom();
+      }, payload.timer);
+      return this.updateDom();
     }
 
     this.rejectSocketNotification(notification, payload);
   },
 
-  processReadyNotification: function (notification, payload) {
+  processReadyNotification: function (instance, notification, payload) {
     if (notification === NOTIFICATION.READY.RESOLVE) {
-      this.loaded = true;
-      return this.config.stops
+      instance.loaded = true;
+      return instance.config.stops
         .filter((stop) => !stop.disabled)
         .forEach((stop) => {
           const { id, stopTimesCount, type, minutesFrom } = stop;
           const normalizedStop = {
             id: id ?? stop,
-            stopTimesCount: stopTimesCount ?? this.config.stopTimesCount,
+            stopTimesCount: stopTimesCount ?? instance.config.stopTimesCount,
             type,
             minutesFrom
           };
@@ -168,12 +162,12 @@ Module.register("publika", {
             return this.notify(this.translate("CLUSTER"), 10);
           }
           if (typeof stop === "string" && isNaN(stop)) {
-            return this.sendSocketNotification(
+            return this.sendInstanceSocketNotification(
               NOTIFICATION.SEARCH_STOP.FETCH,
               normalizedStop
             );
           }
-          return this.sendSocketNotification(
+          return this.sendInstanceSocketNotification(
             NOTIFICATION.STOP_STOPTIMES.FETCH,
             normalizedStop
           );
@@ -183,27 +177,29 @@ Module.register("publika", {
     this.rejectSocketNotification(notification, payload);
   },
 
-  processSearchStopNotification: function (notification, payload) {
-    const self = this;
+  processSearchStopNotification: function (instance, notification, payload) {
     const { data, ...stop } = payload;
 
     if (notification === NOTIFICATION.SEARCH_STOP.RESOLVE) {
-      return this.updateStoptime(stop, data);
+      return this.updateStoptime(instance, stop, data);
     }
 
     if (notification === NOTIFICATION.SEARCH_STOP.REJECT) {
       setTimeout(() => {
-        self.sendSocketNotification(NOTIFICATION.SEARCH_STOP.FETCH, stop);
-      }, this.getNextInterval(this.intervals.retry));
-      return this.rejectStoptime(stop.id);
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.SEARCH_STOP.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.retry));
+      return this.rejectStoptime(instance, stop.id);
     }
 
     this.rejectSocketNotification(notification, payload);
   },
 
-  processWatcherNotification: function (notification, payload) {
+  processWatcherNotification: function (instance, notification, payload) {
     if (notification === NOTIFICATION.WATCHER.AWAKE) {
-      return this.sendInitNotification();
+      return this.sendInitNotification(instance);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -214,25 +210,57 @@ Module.register("publika", {
   },
 
   socketNotificationReceived: function (notification, payload) {
+    const [instanceId, notificationType] = notification.split("::");
+
+    if (instanceId !== this.identifier) {
+      return;
+    }
+
     if (this.debug) {
       Log.log(notification, payload);
     }
+
+    const instance = this.getInstance();
+
     if (
-      this.checkSocketNotification(notification, NOTIFICATION.STOP_STOPTIMES)
+      this.checkSocketNotification(
+        notificationType,
+        NOTIFICATION.STOP_STOPTIMES
+      )
     ) {
-      return this.processStopStoptimesNotification(notification, payload);
+      return this.processStopStoptimesNotification(
+        instance,
+        notificationType,
+        payload
+      );
     }
-    if (this.checkSocketNotification(notification, NOTIFICATION.NOTIFICATION)) {
-      return this.processNotificationNotification(notification, payload);
+    if (
+      this.checkSocketNotification(notificationType, NOTIFICATION.NOTIFICATION)
+    ) {
+      return this.processNotificationNotification(
+        instance,
+        notificationType,
+        payload
+      );
     }
-    if (this.checkSocketNotification(notification, NOTIFICATION.READY)) {
-      return this.processReadyNotification(notification, payload);
+    if (this.checkSocketNotification(notificationType, NOTIFICATION.READY)) {
+      return this.processReadyNotification(instance, notificationType, payload);
     }
-    if (this.checkSocketNotification(notification, NOTIFICATION.WATCHER)) {
-      return this.processWatcherNotification(notification, payload);
+    if (this.checkSocketNotification(notificationType, NOTIFICATION.WATCHER)) {
+      return this.processWatcherNotification(
+        instance,
+        notificationType,
+        payload
+      );
     }
-    if (this.checkSocketNotification(notification, NOTIFICATION.SEARCH_STOP)) {
-      return this.processSearchStopNotification(notification, payload);
+    if (
+      this.checkSocketNotification(notificationType, NOTIFICATION.SEARCH_STOP)
+    ) {
+      return this.processSearchStopNotification(
+        instance,
+        notificationType,
+        payload
+      );
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -252,9 +280,10 @@ Module.register("publika", {
   },
 
   watchRemainingTime: function () {
-    const remainingTimes = this.stoptimes
+    const instance = this.getInstance();
+    const remainingTimes = instance.stops
       .map((stop) =>
-        stop.stoptimes
+        Array.isArray(stop.stoptimes)
           ? stop.stoptimes
             .filter((stoptime) => stoptime.remainingTime >= 0)
             .map((stoptime) => (stoptime.remainingTime >= 0 ? 1 : 0))
@@ -263,13 +292,15 @@ Module.register("publika", {
       )
       .reduce((p, c) => p + c, 0);
     if (remainingTimes === 0) {
-      clearInterval(this.backgroundTasks.remainingTimeWatcher);
-      this.backgroundTasks.remainingTimeWatcher = undefined;
-      Log.warn(`Shutting down ${this.name}::remainingTimeWatcher`);
+      clearInterval(instance.backgroundTasks.remainingTimeWatcher);
+      instance.backgroundTasks.remainingTimeWatcher = undefined;
+      Log.warn(
+        `Shutting down ${this.name}::${this.identifier}::remainingTimeWatcher`
+      );
       return;
     }
-    this.stoptimes.forEach((stop) => {
-      if (!stop.stoptimes) {
+    instance.stops.forEach((stop) => {
+      if (!Array.isArray(stop.stoptimes)) {
         return;
       }
       stop.stoptimes
@@ -283,7 +314,8 @@ Module.register("publika", {
           if (previousRemainingTime !== stoptime.remainingTime) {
             if (this.debug) {
               Log.log(
-                `watchRemainingTime updated remaining time for service ${stoptime.line
+                `${this.name}::${this.identifier
+                }::watchRemainingTime updated remaining time for service ${stoptime.line
                 } departing from ${stop.meta.name} at ${time.format(
                   this.timeFormat
                 )}`
@@ -295,26 +327,38 @@ Module.register("publika", {
     });
   },
 
-  watchUpdateStatus: function (self) {
-    var shouldUpdateDom = false;
-    self.stoptimes.forEach((stop) => {
-      stop.updateAge = Math.round(
-        moment.duration(moment().diff(stop.updateTime)).asSeconds()
+  watchUpdateStatus: function () {
+    const instance = this.getInstance();
+    const remaining = instance.stops.filter((stop) => stop.updateAge !== true);
+    if (remaining.length === 0) {
+      clearInterval(instance.backgroundTasks.updateStatusWatcher);
+      instance.backgroundTasks.updateStatusWatcher = undefined;
+      Log.warn(
+        `Shutting down ${this.name}::${this.identifier}::updateStatusWatcher`
       );
-      if (stop.updateAge > self.updateAgeLimitSeconds && !shouldUpdateDom) {
-        shouldUpdateDom = true;
-      }
-    });
+    }
+    var shouldUpdateDom = false;
+    instance.stops
+      .filter((stop) => stop.updateAge !== true)
+      .forEach((stop) => {
+        stop.updateAge = Math.round(
+          moment.duration(moment().diff(stop.updateTime)).asSeconds()
+        );
+        if (stop.updateAge > this.updateAgeLimitSeconds) {
+          stop.updateAge = true;
+          if (!shouldUpdateDom) {
+            shouldUpdateDom = true;
+          }
+        }
+      });
     if (shouldUpdateDom) {
-      clearInterval(this.backgroundTasks.updateStatusWatcher);
-      this.backgroundTasks.updateStatusWatcher = undefined;
-      Log.warn(`Shutting down ${this.name}::updateStatusWatcher`);
       this.updateDom();
     }
   },
 
   watchSocket: function () {
-    const lastUpdate = this.stoptimes
+    const instance = this.getInstance();
+    const lastUpdate = instance.stops
       .map((stop) => stop.updateTime)
       .reduce((p, c) => (p !== undefined && p.isAfter(c) ? p : c), undefined);
     if (
@@ -322,12 +366,75 @@ Module.register("publika", {
         moment().subtract(this.updateAgeLimitSeconds, "seconds")
       )
     ) {
-      this.sendSocketNotification(NOTIFICATION.WATCHER.WAKE_UP, undefined);
+      this.sendInstanceSocketNotification(
+        NOTIFICATION.WATCHER.WAKE_UP,
+        undefined
+      );
     }
   },
 
   onAllModulesStarted: function () {
-    if (!this.config.hslApiKey) {
+    const modules = MM.getModules().filter(
+      (module) => module.name === this.name
+    );
+    if (modules.length > 1) {
+      const cores = modules.filter((module) => module.config.core);
+      if (cores.length !== 1) {
+        this.instances = MM.getModules()
+          .filter(
+            (module) =>
+              module.name === this.name && module.identifier === this.identifier
+          )
+          .map((module) => ({
+            id: module.identifier,
+            loaded: true,
+            coreError:
+              cores.length === 0 ? "CORE_ERROR_NONE" : "CORE_ERROR_MULTIPLE"
+          }));
+        return;
+      }
+    }
+    this.instances = MM.getModules()
+      .filter(
+        (module) =>
+          module.name === this.name && module.identifier === this.identifier
+      )
+      .map((module) => ({
+        id: module.identifier,
+        backgroundTasks: {
+          remainingTimeWatcher: undefined,
+          socketWatcher: undefined,
+          updateStatusWatcher: undefined
+        },
+        config: { ...this.defaults, ...module.config },
+        core: modules.length === 1 ?? module.config.core,
+        intervals: {
+          update: {
+            remainingTimeWatcher: 5 * 1000,
+            socketWatcher: 100 * 1000,
+            updateStatusWatcher: 5 * 1000,
+            default: 45 * 1000
+          },
+          retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
+        },
+        loaded: false,
+        notifications: [],
+        sentNotifications: [],
+        stops: module.config.stops
+          .filter((stop) => !stop.disabled)
+          .map((stop) => ({
+            ...stop,
+            id: stop.id ?? stop,
+            stoptimes: { empty: true }
+          }))
+      }));
+    const instance = this.getInstance();
+    this.sendInitNotification(instance);
+    if (
+      instance.core &&
+      instance.id === this.identifier &&
+      !instance.config.hslApiKey
+    ) {
       this.apiKeyDeadLine = moment("20230403", "YYYYMMDD");
       const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
       const hslNotification = {
@@ -338,34 +445,42 @@ Module.register("publika", {
         )}, the use of the Digitransit APIs will require registration and use of API keys. Registration can be done at the Digitransit API portal.`,
         timer: 15 * 1000
       };
-      this.sendSocketNotification(
+      this.sendInstanceSocketNotification(
         NOTIFICATION.NOTIFICATION.API_KEY,
         hslNotification
       );
     }
-  },
-
-  onDomObjectsCreated: function () {
-    this.sendInitNotification();
-    if (this.backgroundTasks.socketWatcher === undefined) {
-      Log.log(`Starting ${this.name}::socketWatcher`);
-      this.backgroundTasks.socketWatcher = setInterval(() => {
+    if (instance.backgroundTasks.socketWatcher === undefined) {
+      Log.log(`Starting ${this.name}::${this.identifier}::socketWatcher`);
+      instance.backgroundTasks.socketWatcher = setInterval(() => {
         this.watchSocket();
-      }, this.intervals.update.socketWatcher);
+      }, instance.intervals.update.socketWatcher);
     }
   },
 
-  sendInitNotification: function () {
-    this.sendSocketNotification(NOTIFICATION.READY.INIT, {
-      digiTransit: {
-        subscriptionKey: this.config.hslApiKey,
-        apiUrl: this.digitransitApiUrl
-      },
-      debug: this.debug
-    });
+  getInstance: function () {
+    return this.instances.find((instance) => instance.id === this.identifier);
+  },
+
+  sendInitNotification: function (instance) {
+    if (instance.core && instance.id === this.identifier) {
+      this.sendInstanceSocketNotification(NOTIFICATION.READY.CORE_INIT, {
+        digiTransit: {
+          subscriptionKey: instance.config.hslApiKey,
+          apiUrl: this.digitransitApiUrl
+        },
+        debug: this.debug
+      });
+    }
+    this.sendInstanceSocketNotification(NOTIFICATION.READY.INIT, undefined);
+  },
+
+  sendInstanceSocketNotification: function (notification, payload) {
+    this.sendSocketNotification(`${this.identifier}::${notification}`, payload);
   },
 
   notify: function (message, seconds) {
+    const instance = this.getInstance();
     const notification = {
       type: "notification",
       title: `Module ${this.name} (HSL timetables)`,
@@ -374,37 +489,37 @@ Module.register("publika", {
     };
 
     if (
-      this.sentNotifications.some(
+      instance.sentNotifications.some(
         (item) => JSON.stringify(item) === JSON.stringify(notification)
       )
     ) {
       return;
     }
 
-    this.sendSocketNotification(
+    this.sendInstanceSocketNotification(
       NOTIFICATION.NOTIFICATION.RESOLVE,
       notification
     );
-    this.sentNotifications.push(notification);
+    instance.sentNotifications.push(notification);
   },
 
-  updateStoptime: function (stop, data) {
-    const index = this.stoptimes.findIndex(
+  updateStoptime: function (instance, stop, data) {
+    const index = instance.stops.findIndex(
       (stoptime) => stoptime.id === stop.id
     );
     const { stopTimes, alerts, stops, ...meta } = data;
-    this.stoptimes[index].stoptimes = stopTimes;
-    this.stoptimes[index].meta = meta;
-    this.stoptimes[index].alerts = alerts;
-    this.stoptimes[index].searchStops = stops;
-    this.stoptimes[index].updateTime = moment();
-    this.stoptimes[index].updateAge = 0;
+    instance.stops[index].stoptimes = stopTimes;
+    instance.stops[index].meta = meta;
+    instance.stops[index].alerts = alerts;
+    instance.stops[index].searchStops = stops;
+    instance.stops[index].updateTime = moment();
+    instance.stops[index].updateAge = 0;
     this.updateDom();
   },
 
-  rejectStoptime: function (id) {
-    const index = this.stoptimes.findIndex((stoptime) => stoptime.id === id);
-    this.stoptimes[index].stoptimes = { error: true };
+  rejectStoptime: function (instance, id) {
+    const index = instance.stops.findIndex((stoptime) => stoptime.id === id);
+    instance.stops[index].stoptimes = { error: true };
     this.updateDom();
   },
 
@@ -416,41 +531,39 @@ Module.register("publika", {
     };
   },
 
+  getScripts: function () {
+    return ["moment.js", "moment-timezone.js"];
+  },
+
   getStyles: function () {
     return [this.file(`${this.name}.css`)];
   },
 
-  start: function () {
-    Log.info(`Starting module: ${this.name}`);
-    this.config.stops
-      .filter((stop) => !stop.disabled)
-      .forEach((stop) => {
-        this.stoptimes.push({
-          id: stop.id ?? stop,
-          ...stop,
-          stoptimes: { empty: true }
-        });
-      });
-  },
-
   getDom: function () {
     var wrapper = document.createElement("div");
+    const instance = this.getInstance();
 
-    if (!this.config.stops.length) {
-      wrapper.innerHTML = this.translate("SETUP_MODULE");
-      wrapper.className = "dimmed light small";
-      return wrapper;
-    }
-
-    if (!this.loaded) {
+    if (!instance.loaded) {
       wrapper.innerHTML = this.translate("LOADING");
       wrapper.className = "dimmed light small";
       return wrapper;
     }
 
+    if (instance.coreError) {
+      wrapper.innerHTML = this.translate(instance.coreError);
+      wrapper.className = "dimmed light small";
+      return wrapper;
+    }
+
+    if (!instance.config.stops.length) {
+      wrapper.innerHTML = this.translate("SETUP_MODULE");
+      wrapper.className = "dimmed light small";
+      return wrapper;
+    }
+
     wrapper.className = "light small timetable";
-    var htmlElements = [...this.stoptimes.keys()]
-      .map((index) => this.getTable(this.stoptimes.at(index)))
+    var htmlElements = [...instance.stops.keys()]
+      .map((index) => this.getTable(instance.stops.at(index)))
       .join('<tr><td data-function="getDom">&nbsp;</td></tr>');
     wrapper.innerHTML = `${this.getNotifications()}<table id="stoptimes">${htmlElements}</table>`;
 
@@ -458,10 +571,11 @@ Module.register("publika", {
   },
 
   getNotifications: function () {
-    if (this.notifications.length === 0) {
+    const instance = this.getInstance();
+    if (instance.notifications.length === 0) {
       return "";
     }
-    const notifications = this.notifications
+    const notifications = instance.notifications
       .map(
         (notification) =>
           `<tr><td colspan="${colspan}">${notification.message}</td></tr>`
@@ -502,7 +616,7 @@ Module.register("publika", {
 
   getTableForTimetable: function (stop) {
     const headerRow = this.getHeaderRow(stop);
-    const aged = stop.updateAge > this.updateAgeLimitSeconds;
+    const aged = stop.updateAge === true;
     const agedText = aged
       ? `<tr><td colspan="${colspan}"><i class="fa-solid fa-hourglass-end"></i> ${this.translate(
         "UPDATE_OLD"
@@ -614,13 +728,14 @@ Module.register("publika", {
     if (!stoptime.headsign) {
       return "";
     }
+    const instance = this.getInstance();
     const fullHeadsign =
       typeof stop.fullHeadsign === "undefined"
-        ? this.config.fullHeadsign
+        ? instance.config.fullHeadsign
         : stop.fullHeadsign;
     const headsignViaTo =
       typeof stop.headsignViaTo === "undefined"
-        ? this.config.headsignViaTo
+        ? instance.config.headsignViaTo
         : stop.headsignViaTo;
     const [to, via] = stoptime.headsign.split(" via ");
     return fullHeadsign && via
@@ -678,7 +793,8 @@ Module.register("publika", {
       ? `${this.getStopNameWithVehicleMode(stop.meta)} - ${stop.name}`
       : this.getStopNameWithVehicleMode(stop.meta);
     return `<tr class="stop-header"${this.debug ? ` data-source='${JSON.stringify(stop)}'` : ""
-      }><th colspan="${colspan}">${header}</th></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
+      }><th colspan="${colspan}">${header}</th></tr>
+      <tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
         stop.meta,
         stop.minutesFrom
       )}<td>

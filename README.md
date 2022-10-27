@@ -24,6 +24,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Can set a delay start to a stop
   - For example in the case the stop is a bit far, so services that start before the delay are not shown
 - Stop and station IDs can be searched directly with the module
+- Can be loaded multiple times in different positions or in the same
 
 ## Dependencies
 
@@ -57,6 +58,10 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 ![Show a warning when data hasn't been fetched in a while](docs/TYRrhdPr.png)
 
+- The module can be loaded multiple times:
+
+![The module can be loaded multiple times](docs/XiLbIaib.png)
+
 ## Getting started
 
 1) Clone this repository under `MagicMirror/modules` folder
@@ -80,7 +85,8 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
-| hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023 | `"abc123def456ghi789"` |
+| core | Required only when loading the module multiple times | `boolean` | `undefined` | When loading the module multiple times, one and only one instance has to be set up as core | `true` |
+| hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023. **Important**: If the module is loaded multiple times, this field has to be in the same instance that is set as core | `"abc123def456ghi789"` |
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
 | fullHeadsign | no | `boolean` | `false` | Show complete headsign for all stops. For example: Töölön halli via Kallio | `true` |
 | headsignViaTo | no | `boolean` | `false` | Show headsign in the form via-destination for all stops. For example: Kallio - Töölön halli. Requires `fullHeadsign` to be `true` | `true` |
