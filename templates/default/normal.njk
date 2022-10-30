@@ -1,12 +1,13 @@
-{% extends "templates/default/base.njk" %}
-
-{% block main %}
 <div class="light small timetable">
   {% include "templates/elements/notifications.njk" %}
   <table id="stoptimes">
     <tbody>
       {% for stop in data.stops %}
-      {% include "templates/elements/stop-item.njk" %}
+      {% if stop.meta.responseType==="STOP_SEARCH" %}
+      {% include "templates/elements/stop-search.njk" %}
+      {% else %}
+      {% include "templates/elements/stop-stoptimes.njk" %}
+      {% endif %}
       <tr>
         <td data-context="default.normal">&nbsp;</td>
       </tr>
@@ -16,4 +17,3 @@
   {% block content %}
   {% endblock content %}
 </div>
-{% endblock main %}
