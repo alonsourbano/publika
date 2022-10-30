@@ -1,0 +1,24 @@
+<tr class="stop-header" data-source="{{stop | dump if config.debug else ""}}">
+  <th colspan="{{defaults.colspan}}">
+    <i class="fa-solid fa-magnifying-glass"></i> {{stop.id}}
+  </th>
+</tr>
+{% for searchStop in stop.searchStops %}
+<tr>
+  <td colspan="{{defaults.colspan}}">
+    <i class="{{maps.vehicleModes.get(searchStop.vehicleMode)}}"></i> {{searchStop.gtfsId}} • {{searchStop.name}}
+  </td>
+</tr>
+{% set context = searchStop | contextualize %}
+{% include "templates/elements/sub-header.njk" %}
+<tr class="stop-subheader">
+  <td colspan="{{defaults.colspan}}">
+    {{"STATION" | translate}}: {{searchStop.parentStation.gtfsId}} •
+    {{searchStop.parentStation.name}}
+  </td>
+</tr>
+{% else %}
+<tr>
+  <td colspan="{{defaults.colspan}}"><i class="fa-solid fa-circle-exclamation"></i> {{"NO_DATA" | translate}}</td>
+</tr>
+{% endfor %}

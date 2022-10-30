@@ -1,0 +1,62 @@
+{% if functions.validateStopRules(stop) %}
+<tr class="stop-header" data-source="{{stop | dump if config.debug else ""}}">
+  {% if stop.meta %}
+  <th colspan="{{defaults.colspan}}">
+    <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
+    {{stop.meta.name}}{{[" - ", stop.name] | join if stop.name else ""}}
+  </th>
+  {% else %}
+  <th colspan="{{defaults.colspan}}">HSL:{{stop.id}}</th>
+  {% endif %}
+</tr>
+{% set context = [
+stop.meta, {
+minutesFrom: stop.minutesFrom
+}
+] | contextualize %}
+{% include "templates/elements/sub-header.njk" %}
+{% if stop.type === "cluster" %}
+<tr>
+  <td colspan="{{defaults.colspan}}">
+    <i class="fa-solid fa-xmark"></i>
+    {{"CLUSTER" | translate}}
+  </td>
+</tr>
+{% elif stop.stoptimes.error %}
+<tr>
+  <td colspan="{{defaults.colspan}}">
+    <i class="fa-solid fa-xmark"></i>
+    {{"ERROR" | translate}}
+  </td>
+</tr>
+{% elif stop.stoptimes.empty %}
+<tr>
+  <td colspan="{{defaults.colspan}}">
+    <i class="fa-solid fa-spinner"></i>
+    {{"LOADING" | translate}}
+  </td>
+</tr>
+{% endif %}
+{% if stop.updateAge === true %}
+<tr>
+  <td colspan="{{defaults.colspan}}">
+    <i class="fa-solid fa-hourglass-end"></i>
+    {{"UPDATE_OLD" | translate}}
+  </td>
+</tr>
+{% endif %}
+{% for stoptime in stop.stoptimes %}
+{% include "templates/elements/stoptime.njk" %}
+{% endfor %}
+{% set stopAlerts = functions.getStopAlerts(stop) %}
+{% for stopAlert in stopAlerts %}
+{% set agedStyle = functions.getAgedStyle(stop) %}
+<tr class="{{agedStyle}}">
+  <td data-function="stop-stoptimes">&nbsp;</td>
+  <td class="alert" colspan="{{defaults.colspan - 1}}">
+    <i class="{{maps.alertSeverityLevels.get(stopAlert.icon)}}"></i>
+    {{stopAlert.effect}}
+  </td>
+</tr>
+{% endfor %}
+{% endif %}
