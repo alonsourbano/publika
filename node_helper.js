@@ -92,8 +92,7 @@ module.exports = NodeHelper.create({
       });
     }
 
-    Log.error(`Unhandled socket notification ${notification}`, payload);
-    throw Error(`Unhandled socket notification ${notification}`);
+    Log.warn(`Unhandled socket notification ${notification}`, payload);
   },
 
   sendInstanceSocketNotification: function (instance, notification, payload) {

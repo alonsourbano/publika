@@ -1,3 +1,5 @@
+/* global nunjucks */
+
 // Based on code from Sami Mäkinen (https://github.com/ZakarFin)
 
 const NOTIFICATION = {
@@ -149,7 +151,6 @@ Module.register("publika", {
 
   processReadyNotification: function (instance, notification, payload) {
     if (notification === NOTIFICATION.READY.RESOLVE) {
-      instance.loaded = true;
       return instance.config.stops
         .filter((stop) => !stop.disabled)
         .filter(this.validateStopRules)
@@ -353,6 +354,13 @@ Module.register("publika", {
           moment.duration(moment().diff(stop.updateTime)).asSeconds()
         );
         if (stop.updateAge > this.updateAgeLimitSeconds) {
+          if (this.debug) {
+            Log.warn(
+              `${this.name}::${this.identifier
+              }::watchUpdateStatus updated age for stop ${stop.meta.name ?? stop.id
+              }`
+            );
+          }
           stop.updateAge = true;
           if (!shouldUpdateDom) {
             shouldUpdateDom = true;
@@ -395,7 +403,6 @@ Module.register("publika", {
           )
           .map((module) => ({
             id: module.identifier,
-            loaded: true,
             coreError:
               cores.length === 0 ? "CORE_ERROR_NONE" : "CORE_ERROR_MULTIPLE"
           }));
@@ -425,7 +432,6 @@ Module.register("publika", {
           },
           retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
         },
-        loaded: false,
         notifications: [],
         sentNotifications: [],
         stops: module.config.stops
@@ -591,318 +597,197 @@ Module.register("publika", {
   },
 
   getStyles: function () {
-    return [this.file(`${this.name}.css`)];
+    return ["font-awesome.css", this.file(`${this.name}.css`)];
   },
 
-  getDom: function () {
-    var wrapper = document.createElement("div");
-    const instance = this.getInstance();
-
-    if (instance.coreError) {
-      wrapper.innerHTML = this.translate(instance.coreError);
-      wrapper.className = "dimmed light small";
-      return wrapper;
+  getTemplateObject: function () {
+    const { config, coreError, notifications, stops } = this.getInstance();
+    if (coreError) {
+      return ["default/error", { message: this.translate(coreError) }];
     }
-
-    if (!instance.loaded) {
-      wrapper.innerHTML = this.translate("LOADING");
-      wrapper.className = "dimmed light small";
-      return wrapper;
+    if (!config?.stops?.length) {
+      return ["default/error", { message: this.translate("SETUP_MODULE") }];
     }
-
-    if (!instance.config.stops.length) {
-      wrapper.innerHTML = this.translate("SETUP_MODULE");
-      wrapper.className = "dimmed light small";
-      return wrapper;
-    }
-
-    wrapper.className = "light small timetable";
-    var htmlElements = [...instance.stops.keys()]
-      .map((index) => this.getTable(instance.stops.at(index)))
-      .join('<tr><td data-function="getDom">&nbsp;</td></tr>');
-    wrapper.innerHTML = `${this.getNotifications()}<table id="stoptimes">${htmlElements}</table>`;
-    return wrapper;
-  },
-
-  getNotifications: function () {
-    const instance = this.getInstance();
-    if (instance.notifications.length === 0) {
-      return "";
-    }
-    const notifications = instance.notifications
-      .map(
-        (notification) =>
-          `<tr><td colspan="${colspan}">${notification.message}</td></tr>`
-      )
-      .join("");
-    return `<div class="notification"><table id="notifications">${notifications}</table></div>`;
-  },
-
-  getTable: function (stop) {
-    if (!stop) {
-      return `<span>${this.translate("ERROR_SCHEDULE")}</span>`;
-    }
-    if (stop.disabled) {
-      return "";
-    }
-    if (
-      stop.stoptimes?.empty ||
-      stop.stoptimes?.error ||
-      stop.type === "cluster"
-    ) {
-      var icon = '<i class="fa-solid fa-spinner"></i>';
-      var text = "LOADING";
-      if (stop.type === "cluster") {
-        icon = '<i class="fa-solid fa-xmark"></i>';
-        text = "CLUSTER";
-      } else if (stop.stoptimes?.error) {
-        icon = '<i class="fa-solid fa-xmark"></i>';
-        text = "ERROR";
+    return [
+      "default/normal",
+      {
+        config: { debug: this.debug },
+        data: {
+          notifications,
+          stops
+        },
+        defaults: { colspan },
+        functions: {
+          getAgedStyle: (stop) => this.getAgedStyle(stop),
+          getHeadsignAlerts: (stop, stoptime) =>
+            stop.alerts
+              .map((alert) => ({
+                ...alert,
+                startTime: moment(alert.startTime),
+                endTime: moment(alert.endTime)
+              }))
+              .filter(
+                (alert) =>
+                  alert.trip?.gtfsId === stoptime.trip?.gtfsId ||
+                  alert.route?.gtfsId === stoptime.trip?.route?.gtfsId
+              )
+              .filter((alert) =>
+                moment().isBetween(alert.startTime, alert.endTime)
+              )
+              .reduce(
+                (p, c) =>
+                  p.some((item) => c.alertSeverityLevel === item)
+                    ? p
+                    : p.concat(c.alertSeverityLevel),
+                []
+              ),
+          getHeadsignText: (stop, stoptime) => {
+            if (!stoptime.headsign) {
+              return "";
+            }
+            const fullHeadsign =
+              typeof stop.fullHeadsign === "undefined"
+                ? config.fullHeadsign
+                : stop.fullHeadsign;
+            const headsignViaTo =
+              typeof stop.headsignViaTo === "undefined"
+                ? config.headsignViaTo
+                : stop.headsignViaTo;
+            const [to, via] = stoptime.headsign.split(" via ");
+            return fullHeadsign && via
+              ? headsignViaTo
+                ? `${via} - ${to}`
+                : `${to} via ${via}`
+              : to;
+          },
+          getStopAlerts: (stop) =>
+            stop.alerts
+              ? stop.alerts
+                .map((alert) => ({
+                  ...alert,
+                  startTime: moment(alert.startTime),
+                  endTime: moment(alert.endTime)
+                }))
+                .filter((alert) =>
+                  moment().isBetween(alert.startTime, alert.endTime)
+                )
+                .map((alert) => ({
+                  id: `${alert.alertSeverityLevel}:${alert.alertEffect}`,
+                  icon: alert.alertSeverityLevel,
+                  effect: this.translate(alert.alertEffect),
+                  startTime: alert.startTime,
+                  endTime: alert.endTime,
+                  text: this.getAlertTranslation(alert, "alertHeaderText")
+                }))
+                .reduce(
+                  (p, c) =>
+                    p.some((item) => c.id === item.id) ? p : p.concat(c),
+                  []
+                )
+              : undefined,
+          getStoptimeStyles: (stop, stoptime) => {
+            const styles = [];
+            const agedStyle = this.getAgedStyle(stop);
+            if (stoptime.cancelled) {
+              styles.push("cancelled-trip");
+            } else if (stoptime.remainingTime === 0) {
+              styles.push("now");
+            }
+            if (agedStyle) {
+              styles.push(agedStyle);
+            }
+            return styles.join(" ");
+          },
+          validateStopRules: (stop) => this.validateStopRules(stop)
+        },
+        maps: {
+          alertSeverityLevels: new Map([
+            ["UNKNOWN_SEVERITY", "fa-solid fa-circle-question"],
+            ["INFO", "fa-solid fa-circle-info"],
+            ["WARNING", "fa-solid fa-triangle-exclamation"],
+            ["SEVERE", "fa-solid fa-radiation"]
+          ]),
+          platformNames: new Map([
+            ["AIRPLANE", this.translate("PLATFORM")],
+            ["BICYCLE", this.translate("PLATFORM")],
+            ["BUS", this.translate("PLATFORM")],
+            ["CABLE_CAR", this.translate("TRACK")],
+            ["CAR", this.translate("PLATFORM")],
+            ["FERRY", this.translate("PIER")],
+            ["FUNICULAR", this.translate("TRACK")],
+            ["GONDOLA", this.translate("TRACK")],
+            ["RAIL", this.translate("TRACK")],
+            ["SUBWAY", this.translate("TRACK")],
+            ["TRAM", this.translate("PLATFORM")]
+          ]),
+          vehicleModes: new Map([
+            // Vehicle modes according to DigiTransit documentation
+            ["AIRPLANE", "fa-solid fa-plane-up"],
+            ["BICYCLE", "fa-solid fa-bicycle"],
+            ["BUS", "fa-solid fa-bus-simple"],
+            ["CABLE_CAR", "fa-solid fa-cable-car"],
+            ["CAR", "fa-solid fa-car"],
+            ["FERRY", "fa-solid fa-ferry"],
+            ["FUNICULAR", "fa-solid fa-cable-car"], // No icon found for funicular
+            ["GONDOLA", "fa-solid fa-cable-car"], // A gondola (lift) should be the same as cable car
+            ["RAIL", "fa-solid fa-train"],
+            ["SUBWAY", "fa-solid fa-m"],
+            ["TRAM", "fa-solid fa-train-tram"]
+          ])
+        }
       }
-      return `${this.getHeaderRow(
-        stop
-      )}<tr><td colspan="${colspan}">${icon} ${this.translate(text)}</td></tr>`;
-    }
-    return stop.meta.responseType === "STOP_SEARCH"
-      ? this.getTableForStopSearch(stop)
-      : this.getTableForTimetable(stop);
+    ];
   },
 
-  getTableForTimetable: function (stop) {
-    if (!this.validateStopRules(stop)) {
-      return "";
+  getTemplate() {
+    const template = this.getTemplateObject().at(0);
+    return `templates/${template}.njk`;
+  },
+
+  getTemplateData() {
+    return this.getTemplateObject().at(1);
+  },
+
+  nunjucksEnvironment: function () {
+    if (this._nunjucksEnvironment !== null) {
+      return this._nunjucksEnvironment;
     }
-    const headerRow = this.getHeaderRow(stop);
-    const aged = stop.updateAge === true;
-    const agedText = aged
-      ? `<tr><td colspan="${colspan}"><i class="fa-solid fa-hourglass-end"></i> ${this.translate(
-        "UPDATE_OLD"
-      )}</td></tr>`
-      : "";
-    const hasRemainingTimes = stop.stoptimes.some(
-      (item) => item.remainingTime >= 0
+
+    this._nunjucksEnvironment = new nunjucks.Environment(
+      new nunjucks.WebLoader(this.file(""), { async: false }),
+      {
+        trimBlocks: true,
+        lstripBlocks: true
+      }
     );
-    const agedStyle = aged
+
+    this._nunjucksEnvironment.addFilter("contextualize", (input) =>
+      nunjucks.runtime.markSafe(
+        Array.isArray(input)
+          ? input.reduce((p, c) => ({ ...p, ...c }), {})
+          : { ...input }
+      )
+    );
+    this._nunjucksEnvironment.addFilter("moment", (input) =>
+      nunjucks.runtime.markSafe(moment(input).format(this.timeFormat))
+    );
+    this._nunjucksEnvironment.addFilter("translate", (input, variables) =>
+      nunjucks.runtime.markSafe(this.translate(input, variables))
+    );
+
+    return this._nunjucksEnvironment;
+  },
+
+  getAgedStyle: function (stop) {
+    const aged = stop.updateAge === true;
+    const hasRemainingTimes = aged
+      ? stop.stoptimes.some((stoptime) => stoptime.remainingTime >= 0)
+      : undefined;
+    return aged
       ? hasRemainingTimes
         ? "update-old"
         : "update-older"
       : undefined;
-    const rows = stop.stoptimes
-      .map((item) => {
-        const styles = [];
-        if (item.cancelled) {
-          styles.push("cancelled-trip");
-        } else if (item.remainingTime === 0) {
-          styles.push("now");
-        }
-        if (agedStyle) {
-          styles.push(agedStyle);
-        }
-        return `<tr${styles.length ? ` class="${styles.join(" ")}"` : ""
-          }>${this.getRowForTimetable(stop, item)}</tr>`;
-      })
-      .reduce((p, c) => `${p}${c}`, "");
-    const alerts = this.getAlerts(stop.alerts, agedStyle);
-    return `${headerRow}${agedText}${rows}${alerts}`;
-  },
-
-  getRowForTimetable: function (stop, stoptime) {
-    return [
-      this.getRouteShortName(stoptime),
-      this.getHeadsign(stop, stoptime),
-      {
-        value: stoptime.cancelled
-          ? '<i class="fa-solid fa-xmark"></i>'
-          : this.getRemainingTimeText(stoptime),
-        style: "time smaller"
-      },
-      {
-        value: moment(stoptime.time).format(this.timeFormat),
-        style: "time"
-      }
-    ]
-      .map(
-        (column) =>
-          `<td${column.style ? ` class="${column.style}"` : ""}>${column.value ?? column
-          }</td>`
-      )
-      .reduce((p, c) => `${p}${c}`, "");
-  },
-
-  getRouteShortName: function (stoptime) {
-    const defaultValue = { value: stoptime.line, style: "route-line" };
-    if (stoptime.cancelled) {
-      return defaultValue;
-    }
-    if (stoptime.line.length === 1) {
-      return {
-        value: `<i class="fa-regular fa-${stoptime.line.toLowerCase()}"></i>`,
-        style: "route-line route-line-icon"
-      };
-    }
-    if (stoptime.line.length === 2) {
-      return {
-        value: `<i class="fa-regular fa-${stoptime.line
-          .charAt(0)
-          .toLowerCase()}"></i> <i class="fa-regular fa-${stoptime.line
-            .charAt(1)
-            .toLowerCase()}"></i>`,
-        style: "route-line route-line-icon"
-      };
-    }
-    return defaultValue;
-  },
-
-  getHeadsign: function (stop, stoptime) {
-    const headsign = this.getHeadsignText(stop, stoptime);
-    const alerts = stop.alerts
-      .map((alert) => ({
-        ...alert,
-        startTime: moment(alert.startTime),
-        endTime: moment(alert.endTime)
-      }))
-      .filter(
-        (alert) =>
-          alert.trip?.gtfsId === stoptime.trip?.gtfsId ||
-          alert.route?.gtfsId === stoptime.trip?.route?.gtfsId
-      )
-      .filter((alert) => moment().isBetween(alert.startTime, alert.endTime))
-      .reduce(
-        (p, c) =>
-          p.some((item) => c.alertSeverityLevel === item)
-            ? p
-            : p.concat(c.alertSeverityLevel),
-        []
-      )
-      .map((alertSeverityLevel) =>
-        this.getAlertSeverityIcon(alertSeverityLevel, "alert")
-      )
-      .join(" ");
-    return alerts.length ? `${alerts} ${headsign}` : headsign;
-  },
-
-  getHeadsignText: function (stop, stoptime) {
-    if (!stoptime.headsign) {
-      return "";
-    }
-    const instance = this.getInstance();
-    const fullHeadsign =
-      typeof stop.fullHeadsign === "undefined"
-        ? instance.config.fullHeadsign
-        : stop.fullHeadsign;
-    const headsignViaTo =
-      typeof stop.headsignViaTo === "undefined"
-        ? instance.config.headsignViaTo
-        : stop.headsignViaTo;
-    const [to, via] = stoptime.headsign.split(" via ");
-    return fullHeadsign && via
-      ? headsignViaTo
-        ? `${via} - ${to}`
-        : `${to} via ${via}`
-      : to;
-  },
-
-  getTableForStopSearch: function (stop) {
-    const headerRow = `<tr class="stop-header"><th colspan="${colspan}"><i class="fa-solid fa-magnifying-glass"></i> ${stop.id}</th></tr>`;
-    const rows =
-      stop.searchStops
-        .map((item) => {
-          const [, stopId] = item.gtfsId.split(":");
-          const [, stationId] = item.parentStation
-            ? item.parentStation.gtfsId.split(":")
-            : "";
-          return `<tr><td colspan="${colspan}">${this.getStopNameWithVehicleMode(
-            item,
-            stopId
-          )}</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
-            item,
-            0
-          )}</td></tr><tr class="stop-subheader"><td colspan="${colspan}">${this.translate(
-            "STATION"
-          )}: ${stationId} • ${item.parentStation?.name}</td></tr>`;
-        })
-        .join(
-          '<tr><td data-function="getTableForStopSearch">&nbsp;</td></tr>'
-        ) ||
-      `<tr><td title="getTableForStopSearch"><i class="fa-solid fa-circle-exclamation"></i> ${this.translate(
-        "NO_DATA"
-      )}</td></tr>`;
-    return `${headerRow}${rows}`;
-  },
-
-  getRemainingTimeText: function (item) {
-    if (item.remainingTime > 20) {
-      return "";
-    }
-    const realtimeIcon = item.realtime ? "" : "~";
-    return item.remainingTime === 0
-      ? `${realtimeIcon}${this.translate("NOW")}`
-      : item.remainingTime > 0
-        ? `${realtimeIcon}${item.remainingTime} ${this.translate("MINUTES_ABBR")}`
-        : '<i class="fa-solid fa-clock-rotate-left"></i>';
-  },
-
-  getHeaderRow: function (stop) {
-    if (!stop.meta) {
-      return `<tr class="stop-header"><th colspan="${colspan}">HSL:${stop.id}</th></tr>`;
-    }
-    const header = stop.name
-      ? `${this.getStopNameWithVehicleMode(stop.meta)} - ${stop.name}`
-      : this.getStopNameWithVehicleMode(stop.meta);
-    return `<tr class="stop-header"${this.debug ? ` data-source='${JSON.stringify(stop)}'` : ""
-      }><th colspan="${colspan}">${header}</th></tr>
-      <tr class="stop-subheader"><td colspan="${colspan}">${this.getSubheaderRow(
-        stop.meta,
-        stop.minutesFrom
-      )}<td>
-      </tr>`;
-  },
-
-  getAlerts: function (alerts, style = "") {
-    return alerts
-      .map((alert) => ({
-        ...alert,
-        startTime: moment(alert.startTime),
-        endTime: moment(alert.endTime)
-      }))
-      .filter((alert) => moment().isBetween(alert.startTime, alert.endTime))
-      .map((alert) => ({
-        id: `${alert.alertSeverityLevel}:${alert.alertEffect}`,
-        icon: this.getAlertSeverityIcon(alert.alertSeverityLevel),
-        effect: this.translate(alert.alertEffect),
-        startTime: alert.startTime,
-        endTime: alert.endTime,
-        text: this.getAlertTranslation(alert, "alertHeaderText")
-      }))
-      .reduce(
-        (p, c) => (p.some((item) => c.id === item.id) ? p : p.concat(c)),
-        []
-      )
-      .map(
-        (alert) =>
-          `<tr${style ? ` class="${style}"` : ""
-          }><td data-function="getAlerts">&nbsp;</td><td class="alert" colspan="${colspan - 1
-          }">${alert.icon} ${alert.effect}</td></tr>`
-      )
-      .join("");
-  },
-
-  getAlertSeverityIcon: function (alertSeverityLevel, style) {
-    const defaultIcon = `<i class="${style} fa-solid fa-circle-question"></i>`;
-    return (
-      new Map([
-        [
-          "UNKNOWN_SEVERITY",
-          `<i class="${style} fa-solid fa-circle-question"></i>`
-        ],
-        ["INFO", `<i class="${style} fa-solid fa-circle-info"></i>`],
-        [
-          "WARNING",
-          `<i class="${style} fa-solid fa-triangle-exclamation"></i>`
-        ],
-        ["SEVERE", `<i class="${style} fa-solid fa-radiation"></i>`]
-      ]).get(alertSeverityLevel) ?? defaultIcon
-    );
   },
 
   getAlertTranslation: function (alert, field) {
@@ -912,89 +797,5 @@ Module.register("publika", {
         ? alert[wantedField].filter((item) => item.language === config.language)
         : undefined;
     return wantedText?.length ? wantedText.at(0).text : alert[field];
-  },
-
-  getSubheaderRow: function (stop, minutesFrom) {
-    const items =
-      stop.locationType === "STOP"
-        ? [
-          stop.desc,
-          { value: stop.code, style: "stop-code" },
-          {
-            value: `<i class="fa-solid fa-${stop.zoneId.toLowerCase()}"></i>`,
-            style: "stop-zone"
-          }
-        ]
-        : [
-          {
-            value: this.translate(stop.locationType),
-            style: "stop-code"
-          },
-          { value: this.getZoneId(stop.zoneId), style: "stop-zone" }
-        ];
-    if (stop.platformCode) {
-      items.splice(2, 0, this.getPlatformText(stop.vehicleMode), {
-        value: stop.platformCode,
-        style: "stop-platform"
-      });
-    }
-    if (minutesFrom) {
-      items.push({
-        value: `${minutesFrom > 0 ? `+${minutesFrom}` : minutesFrom
-          } ${this.translate("MINUTES_ABBR")}`,
-        style: "minutes-from"
-      });
-    }
-    return items
-      .map(
-        (item) =>
-          `<span${item.style ? ` class="${item.style}"` : ""}>${item.value ?? item
-          }</span>`
-      )
-      .join("");
-  },
-
-  getZoneId: function (zone) {
-    return `<i class="fa-solid fa-${zone.toLowerCase()}"></i>`;
-  },
-
-  getStopNameWithVehicleMode: function (data, includeId = undefined) {
-    const name = includeId ? `${includeId} • ${data.name}` : data.name;
-    return `${this.getVehicleModeIcon(data.vehicleMode)} ${name}`;
-  },
-
-  getVehicleModeIcon: function (vehicleMode) {
-    // Vehicle modes according to HSL documentation
-    const map = new Map([
-      ["AIRPLANE", "fa-solid fa-plane-up"],
-      ["BICYCLE", "fa-solid fa-bicycle"],
-      ["BUS", "fa-solid fa-bus-simple"],
-      ["CABLE_CAR", "fa-solid fa-cable-car"],
-      ["CAR", "fa-solid fa-car"],
-      ["FERRY", "fa-solid fa-ferry"],
-      ["FUNICULAR", "fa-solid fa-cable-car"], // No icon found for funicular
-      ["GONDOLA", "fa-solid fa-cable-car"], // A gondola (lift) should be the same as cable car
-      ["RAIL", "fa-solid fa-train"],
-      ["SUBWAY", "fa-solid fa-m"],
-      ["TRAM", "fa-solid fa-train-tram"]
-    ]);
-    return `<i class="${map.get(vehicleMode)}"></i>`;
-  },
-
-  getPlatformText: function (vehicleMode) {
-    const defaultText = this.translate("PLATFORM");
-    return new Map([
-      ["AIRPLANE", defaultText],
-      ["BICYCLE", defaultText],
-      ["BUS", defaultText],
-      ["CABLE_CAR", this.translate("TRACK")],
-      ["CAR", defaultText],
-      ["FERRY", this.translate("PIER")],
-      ["FUNICULAR", this.translate("TRACK")],
-      ["GONDOLA", this.translate("TRACK")],
-      ["RAIL", this.translate("TRACK")],
-      ["SUBWAY", this.translate("TRACK")],
-      ["TRAM", defaultText]
-    ]).get(vehicleMode);
   }
 });

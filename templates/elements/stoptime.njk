@@ -1,0 +1,42 @@
+<tr class="{{functions.getStoptimeStyles(stop, stoptime)}}">
+  {% if stoptime.line.length === 1 %}
+  <td class="route-line route-line-icon">
+    <i class="fa-regular fa-{{stoptime.line | lower}}"></i>
+  </td>
+  {% elif stoptime.line.length === 2 %}
+  <td class="route-line route-line-icon">
+    <i class="fa-regular fa-{{stoptime.line | first | lower}}"></i>
+    <i class="fa-regular fa-{{stoptime.line | last | lower}}"></i>
+  </td>
+  {% else %}
+  <td class="route-line">{{stoptime.line}}</td>
+  {% endif %}
+  <td>
+    {% set headsignAlerts = functions.getHeadsignAlerts(stop, stoptime) %}
+    {% for headsignAlert in headsignAlerts %}
+    <i class="alert {{maps.alertSeverityLevels.get(headsignAlert)}}"></i>
+    {% endfor %}
+    {{functions.getHeadsignText(stop, stoptime)}}
+  </td>
+  <td class="time smaller">
+    {% if stoptime.cancelled %}
+    <i class="fa-solid fa-xmark"></i>
+    {% else %}
+    {% set scheduledTimeIcon = "~" %}
+    {% if stoptime.realtime %}
+    {% set scheduledTimeIcon = "" %}
+    {% endif %}
+    {% if stoptime.remainingTime > 20 %}
+    {% elif stoptime.remainingTime === 0 %}
+    {{scheduledTimeIcon}}{{"NOW" | translate}}
+    {% elif stoptime.remainingTime > 0 %}
+    {{scheduledTimeIcon}}{{stoptime.remainingTime}} {{"MINUTES_ABBR" | translate}}
+    {% else %}
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    {% endif %}
+    {% endif %}
+  </td>
+  <td class="time">
+    {{stoptime.time | moment}}
+  </td>
+</tr>

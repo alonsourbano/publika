@@ -1,0 +1,24 @@
+{% if context.locationType %}
+<tr class="stop-subheader">
+  <td colspan="{{defaults.colspan}}">
+    {% if context.locationType === "STOP" %}
+    <span>{{context.desc}}</span>
+    <span class="stop-code">{{context.code}}</span>
+    {% if context.platformCode %}
+    <span>{{maps.platformNames.get(context.vehicleMode)}}</span>
+    <span class="stop-platform">{{context.platformCode}}</span>
+    {% endif %}
+    <span class="stop-zone"><i class="fa-solid fa-{{context.zoneId | lower}}"></i></span>
+    {% else %}
+    <span class="stop-code">{{context.locationType | translate}}</span>
+    <span class="stop-zone"><i class="fa-solid fa-{{context.zoneId | lower}}"></i></span>
+    {% endif %}
+    {% if context.minutesFrom %}
+    <span class="minutes-from">
+      {{["+",context.minutesFrom | string] | join if context.minutesFrom > 0 else
+      context.minutesFrom}}{{"MINUTES_ABBR" | translate}}
+    </span>
+    {% endif %}
+  </td>
+</tr>
+{% endif %}
