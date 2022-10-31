@@ -2,7 +2,7 @@
 
 HSL (Helsinki region, Finland) public transport schedule times module for MirrorMirror project
 
-![Module](docs/yrsqqZhy.png)
+![Module](docs/fgayavtw.png)
 
 ## What it does
 
@@ -38,35 +38,35 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 ## Other screenshots
 - Single stop view:
 
-![Bus view](docs/JKsyQpwj.png)
+![Bus view](docs/sliutnpv.png)
 
 - Search stop and station IDs from the module:
 
-![Search stop and station IDs from the module](docs/EaMxuCKL.png)
+![Search stop and station IDs from the module](docs/ybdasief.png)
 
 - Supports english, finnish and swedish:
 
-![Supports english, finnish and swedish](docs/guxNoZSP.png)
+![Supports english, finnish and swedish](docs/ioysqugt.png)
 
 - Stop with disruptions (alerts):
 
-![Stop with disruptions](docs/fAdWddIW.png)
+![Stop with disruptions](docs/wftgxqzu.png)
 
 - Stop with cancelled trips:
 
-![Stop with cancelled trips](docs/JHWZPSOd.png)
+![Stop with cancelled trips](docs/fuxwbvzy.png)
 
 - Station with platform:
 
-![Station with platform](docs/UMhTzBft.png)
+![Station with platform](docs/wujpuvps.png)
 
 - Show a warning when data hasn't been fetched in a while (For example when MagicMirror<sup>2</sup> is down):
 
-![Show a warning when data hasn't been fetched in a while](docs/TYRrhdPr.png)
+![Show a warning when data hasn't been fetched in a while](docs/qvligjut.png)
 
 - The module can be loaded multiple times:
 
-![The module can be loaded multiple times](docs/XiLbIaib.png)
+![The module can be loaded multiple times](docs/cwpizvko.png)
 
 ## Getting started
 
