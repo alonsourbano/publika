@@ -77,9 +77,8 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 {
   module: "publika",
   position: "top_right",
-  header: "HSL schedule",
   config: {
-    stops: [1000105],
+    stops: [1020453],
     stopTimesCount: 5,
   }
 }
