@@ -1,0 +1,107 @@
+.publika-base #stoptimes {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.publika-base .stop-subheader td {
+  font-size: 70%;
+  padding: 3px 0 5px 0;
+}
+
+.publika-base .stop-subheader td span {
+  margin-left: 5px;
+}
+
+.publika-base .stop-subheader td span:first-child {
+  margin-left: 0px;
+}
+
+.publika-base .notification {
+  float: right;
+  position: absolute;
+  background-color: black;
+}
+
+.publika-base .notification table td {
+  border: 1px solid;
+  border-radius: 5px;
+  padding: 30px;
+}
+
+.publika-base .now {
+  animation: blinker 2s linear infinite;
+}
+
+.publika-base table td {
+  padding-right: 5px;
+}
+
+.publika-base table td.time {
+  text-align: right;
+}
+
+.publika-base table .smaller {
+  font-size: 70%;
+}
+
+.publika-base table .stop-code {
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 1px 2px;
+}
+
+.publika-base table .route-line {
+  text-align: center;
+}
+
+.publika-base table .route-line-icon div {
+  font-size: 80%;
+}
+
+.publika-base table .stop-platform {
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.publika-base table .stop-platform.smaller {
+  font-size: 60%;
+}
+
+.publika-base table .stop-zone {
+  border: 1px solid;
+  border-radius: 16px;
+  padding: 1px 5px;
+}
+
+.publika-base table .minutes-from {
+  text-align: right;
+}
+
+.publika-base table .cancelled-trip {
+  text-decoration: line-through;
+}
+
+.publika-base table .update-old {
+  opacity: 0.4;
+}
+
+.publika-base table .update-older {
+  opacity: 0.2;
+}
+
+.publika-base table .alert {
+  font-size: 80%;
+}
+
+.publika-base table .alert-full {
+  max-width: 1px;
+  white-space: normal;
+  padding-top: 5px;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}

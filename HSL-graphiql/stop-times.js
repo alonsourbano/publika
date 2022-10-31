@@ -11,15 +11,6 @@ module.exports = (type, stop, count, startTime) => {
       vehicleMode
       platformCode
       locationType
-      routes {
-        ${alerts}
-      }
-      stops {
-        routes {
-          ${alerts}
-        }
-        ${alerts}
-      }
       stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: true, omitCanceled: false) {
         realtimeDeparture
         scheduledDeparture
@@ -29,16 +20,27 @@ module.exports = (type, stop, count, startTime) => {
         headsign
         stop {
           platformCode
+          vehicleMode
         }
         trip {
           gtfsId
           routeShortName
           route {
             gtfsId
+            type
             ${alerts}
           }
           ${alerts}
         }
+      }
+      routes {
+        ${alerts}
+      }
+      stops {
+        routes {
+          ${alerts}
+        }
+        ${alerts}
       }
       ${alerts}
     }

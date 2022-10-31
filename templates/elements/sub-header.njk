@@ -14,13 +14,11 @@
     <span class="stop-zone"><i class="fa-solid fa-{{context.zoneId | lower}}"></i></span>
     {% endif %}
   </td>
-  <td>
-    {% if context.minutesFrom %}
-    <span class="minutes-from">
-      {{["+", context.minutesFrom | string] | join if context.minutesFrom > 0 else context.minutesFrom}}{{"MINUTES_ABBR"
-      | translate}}
-    </span>
-    {% endif %}
+  {% if context.minutesFrom %}
+  <td class="minutes-from">
+    {{["+", context.minutesFrom | string] | join if context.minutesFrom > 0 else context.minutesFrom}}{{"MINUTES_ABBR"
+    | translate}}
   </td>
+  {% endif %}
 </tr>
 {% endif %}

@@ -19,7 +19,8 @@ const processStopTimeData = (json) =>
     trip: {
       gtfsId: stoptime.trip.gtfsId,
       route: {
-        gtfsId: stoptime.trip.route.gtfsId
+        gtfsId: stoptime.trip.route.gtfsId,
+        type: stoptime.trip.route.type
       }
     }
   }));
