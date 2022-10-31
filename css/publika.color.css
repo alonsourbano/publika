@@ -1,0 +1,72 @@
+.publika-color #stoptimes {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.publika-color table .stop-zone {
+  background-color: #007ac9;
+  border-color: #007ac9;
+  color: #fff;
+}
+
+/* .publika-color table .stop-platform {
+  background-color: #f4f4f5;
+  border-color: #f4f4f5;
+  border-radius: 4px;
+} */
+
+.publika-color :not(.cancelled-trip) .route-line div {
+  border-radius: 3px;
+  color: #fff;
+  padding-top: 2px;
+}
+
+.publika-color :not(.cancelled-trip) .route-line div .first {
+  padding-left: 20px;
+}
+
+.publika-color :not(.cancelled-trip) .route-line div .last {
+  padding-right: 20px;
+}
+
+.publika-color .vehicle-bus:not(.cancelled-trip) .route-line div {
+  background-color: #007ac9;
+}
+
+.publika-color .vehicle-bus-express:not(.cancelled-trip) .route-line div,
+.publika-color .vehicle-subway:not(.cancelled-trip) .route-line div {
+  background-color: #ca4000;
+}
+
+.publika-color .vehicle-ferry:not(.cancelled-trip) .route-line div {
+  background-color: #007a97;
+}
+
+.publika-color .vehicle-rail:not(.cancelled-trip) .route-line div {
+  background-color: #8c4799;
+}
+
+.publika-color .vehicle-tram:not(.cancelled-trip) .route-line div {
+  background-color: #008151;
+}
+
+.publika-color i.alert-info,
+.publika-color .alert-info i,
+.publika-color i.alert-unknown_severity,
+.publika-color .alert-unknown_severity i {
+  color: #666;
+}
+
+.publika-color i.alert-warning,
+.publika-color .alert-warning i {
+  color: #f2b62d;
+}
+
+.publika-color i.alert-severe,
+.publika-color .alert-severe i {
+  color: #dc0451;
+}
+
+.publika-color .realtime:not(.cancelled-trip) .time {
+  color: #46850e;
+}

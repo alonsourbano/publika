@@ -95,6 +95,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
 | fullHeadsign | no | `boolean` | `false` | Show complete headsign for all stops. For example: Töölön halli via Kallio | `true` |
 | headsignViaTo | no | `boolean` | `false` | Show headsign in the form via-destination for all stops. For example: Kallio - Töölön halli. Requires `fullHeadsign` to be `true` | `true` |
+| theme | no | `string` | `color` | Color scheme to show. Default is `color` which uses HSL color schemas. Option `mono` uses black and white | `mono` |
 | stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]` |
 
 `stops` can be an array of string, number, `StopObject` or a mix of them:

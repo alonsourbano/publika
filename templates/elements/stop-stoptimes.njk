@@ -1,5 +1,5 @@
 {% if functions.validateStopRules(stop) %}
-<tr class="stop-header" data-source="{{stop | dump if config.debug else ""}}">
+<tr class="stop-header bright" data-source="{{stop | dump if config.debug else ""}}">
   {% if stop.meta %}
   <th colspan="{{defaults.colspan}}">
     <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
@@ -52,8 +52,7 @@ minutesFrom: stop.minutesFrom
 {% for stopAlert in stopAlerts %}
 {% set agedStyle = functions.getAgedStyle(stop) %}
 <tr class="{{agedStyle}}">
-  <td data-context="stop-stoptimes">&nbsp;</td>
-  <td class="alert alert-full" colspan="{{defaults.colspan-1}}">
+  <td class="alert alert-full alert-{{stopAlert.alertSeverityLevel | lower}}" colspan="{{defaults.colspan}}">
     <i class="{{maps.alertSeverityLevels.get(stopAlert.icon)}}"></i>
     {{stopAlert.text}}
   </td>

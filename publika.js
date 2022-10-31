@@ -31,6 +31,7 @@ Module.register("publika", {
   defaults: {
     stops: [],
     stopTimesCount: 5,
+    theme: "color",
     fullHeadsign: false,
     headsignViaTo: false,
     hslApiKey: undefined
@@ -453,6 +454,11 @@ Module.register("publika", {
           }))
       }));
     const instance = this.getInstance();
+    if (instance.config?.theme) {
+      this.loadStyles(() => {
+        Log.log("Styles reloaded");
+      });
+    }
     this.sendInitNotification(instance);
     if (
       instance.core &&
@@ -607,7 +613,19 @@ Module.register("publika", {
   },
 
   getStyles: function () {
-    return ["font-awesome.css", this.file(`${this.name}.css`)];
+    const instance = this.getInstance();
+    if (instance) {
+      if (instance.config?.theme) {
+        return [this.file(`css/${this.name}.${instance.config.theme}.css`)];
+      }
+      return [];
+    }
+
+    return ["font-awesome.css", this.file(`css/${this.name}.base.css`)];
+  },
+
+  loadStyles: function (callback) {
+    this.loadDependencies("getStyles", callback);
   },
 
   getTemplateObject: function () {
@@ -621,7 +639,7 @@ Module.register("publika", {
     return [
       "default/normal",
       {
-        config: { debug: this.debug },
+        config: { debug: this.debug, theme: config.theme },
         data: {
           notifications,
           stops
@@ -684,6 +702,7 @@ Module.register("publika", {
                 .map((alert) => ({
                   id: `${alert.alertSeverityLevel}:${alert.alertEffect}`,
                   icon: alert.alertSeverityLevel,
+                  alertSeverityLevel: alert.alertSeverityLevel,
                   effect: this.translate(alert.alertEffect),
                   startTime: alert.startTime,
                   endTime: alert.endTime,
@@ -702,6 +721,9 @@ Module.register("publika", {
               styles.push("cancelled-trip");
             } else if (stoptime.remainingTime === 0) {
               styles.push("now");
+            }
+            if (stoptime.realtime) {
+              styles.push("realtime");
             }
             if (agedStyle) {
               styles.push(agedStyle);

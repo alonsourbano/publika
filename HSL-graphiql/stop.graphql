@@ -8,6 +8,100 @@
     vehicleMode
     platformCode
     locationType
+    stoptimesWithoutPatterns(numberOfDepartures: 3, omitNonPickups: true, omitCanceled: false) {
+      realtimeDeparture
+      scheduledDeparture
+      realtime
+      realtimeState
+      serviceDay
+      headsign
+      stop {
+        platformCode
+        vehicleMode
+      }
+      trip {
+        gtfsId
+        routeShortName
+        route {
+          gtfsId
+          type
+          alerts {
+            alertHash
+            id
+            alertEffect
+            alertCause
+            alertSeverityLevel
+            alertHeaderText
+            alertHeaderTextTranslations {
+              text
+              language
+            }
+            alertDescriptionText
+            alertDescriptionTextTranslations {
+              text
+              language
+            }
+            alertUrl
+            alertUrlTranslations {
+              text
+              language
+            }
+            effectiveStartDate
+            effectiveEndDate
+            route {
+              gtfsId
+              shortName
+              longName
+            }
+            trip {
+              gtfsId
+              routeShortName
+            }
+            stop {
+              gtfsId
+              name
+            }
+          }
+        }
+        alerts {
+          alertHash
+          id
+          alertEffect
+          alertCause
+          alertSeverityLevel
+          alertHeaderText
+          alertHeaderTextTranslations {
+            text
+            language
+          }
+          alertDescriptionText
+          alertDescriptionTextTranslations {
+            text
+            language
+          }
+          alertUrl
+          alertUrlTranslations {
+            text
+            language
+          }
+          effectiveStartDate
+          effectiveEndDate
+          route {
+            gtfsId
+            shortName
+            longName
+          }
+          trip {
+            gtfsId
+            routeShortName
+          }
+          stop {
+            gtfsId
+            name
+          }
+        }
+      }
+    }
     routes {
       alerts {
         alertHash
@@ -122,98 +216,6 @@
         stop {
           gtfsId
           name
-        }
-      }
-    }
-    stoptimesWithoutPatterns(numberOfDepartures: 3, omitNonPickups: true, omitCanceled: false) {
-      realtimeDeparture
-      scheduledDeparture
-      realtime
-      realtimeState
-      serviceDay
-      headsign
-      stop {
-        platformCode
-      }
-      trip {
-        gtfsId
-        routeShortName
-        route {
-          gtfsId
-          alerts {
-            alertHash
-            id
-            alertEffect
-            alertCause
-            alertSeverityLevel
-            alertHeaderText
-            alertHeaderTextTranslations {
-              text
-              language
-            }
-            alertDescriptionText
-            alertDescriptionTextTranslations {
-              text
-              language
-            }
-            alertUrl
-            alertUrlTranslations {
-              text
-              language
-            }
-            effectiveStartDate
-            effectiveEndDate
-            route {
-              gtfsId
-              shortName
-              longName
-            }
-            trip {
-              gtfsId
-              routeShortName
-            }
-            stop {
-              gtfsId
-              name
-            }
-          }
-        }
-        alerts {
-          alertHash
-          id
-          alertEffect
-          alertCause
-          alertSeverityLevel
-          alertHeaderText
-          alertHeaderTextTranslations {
-            text
-            language
-          }
-          alertDescriptionText
-          alertDescriptionTextTranslations {
-            text
-            language
-          }
-          alertUrl
-          alertUrlTranslations {
-            text
-            language
-          }
-          effectiveStartDate
-          effectiveEndDate
-          route {
-            gtfsId
-            shortName
-            longName
-          }
-          trip {
-            gtfsId
-            routeShortName
-          }
-          stop {
-            gtfsId
-            name
-          }
         }
       }
     }
