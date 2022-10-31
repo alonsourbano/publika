@@ -22,8 +22,6 @@ const NOTIFICATION = {
   }
 };
 
-const colspan = 4;
-
 Module.register("publika", {
   defaults: {
     stops: [],
@@ -526,8 +524,9 @@ Module.register("publika", {
     const index = instance.stops.findIndex(
       (stoptime) => stoptime.id === stop.id
     );
-    const { stopTimes, alerts, stops, ...meta } = data;
+    const { stopTimes, alerts, stops, stopsLength, ...meta } = data;
     instance.stops[index].stoptimes = stopTimes;
+    instance.stops[index].stopsLength = stopsLength;
     instance.stops[index].meta = meta;
     instance.stops[index].alerts = alerts;
     instance.stops[index].searchStops = stops;
@@ -616,7 +615,7 @@ Module.register("publika", {
           notifications,
           stops
         },
-        defaults: { colspan },
+        defaults: { colspan: 4 },
         functions: {
           getAgedStyle: (stop) => this.getAgedStyle(stop),
           getHeadsignAlerts: (stop, stoptime) =>

@@ -1,5 +1,7 @@
 <tr class="{{functions.getStoptimeStyles(stop, stoptime)}}">
-  {% if stoptime.line.length === 1 %}
+  {% if stoptime.cancelled %}
+  <td class="route-line">{{stoptime.line}}</td>
+  {% elif stoptime.line.length === 1 %}
   <td class="route-line route-line-icon">
     <i class="fa-regular fa-{{stoptime.line | lower}}"></i>
   </td>
@@ -39,4 +41,9 @@
   <td class="time">
     {{stoptime.time | moment}}
   </td>
+  {% if stop.stopsLength > 1 and stoptime.stop.platformCode %}
+  <td>
+    <span class="stop-platform smaller">{{stoptime.stop.platformCode}}</span>
+  </td>
+  {% endif %}
 </tr>

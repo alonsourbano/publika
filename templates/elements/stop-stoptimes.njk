@@ -53,7 +53,7 @@ minutesFrom: stop.minutesFrom
 {% set agedStyle = functions.getAgedStyle(stop) %}
 <tr class="{{agedStyle}}">
   <td data-function="stop-stoptimes">&nbsp;</td>
-  <td class="alert" colspan="{{defaults.colspan - 1}}">
+  <td class="alert" colspan="{{defaults.colspan-1}}">
     <i class="{{maps.alertSeverityLevels.get(stopAlert.icon)}}"></i>
     {{stopAlert.effect}}
   </td>

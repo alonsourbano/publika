@@ -27,6 +27,9 @@ module.exports = (type, stop, count, startTime) => {
         realtimeState
         serviceDay
         headsign
+        stop {
+          platformCode
+        }
         trip {
           gtfsId
           routeShortName

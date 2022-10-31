@@ -40,7 +40,7 @@
   text-align: right;
 }
 
-.publika table td.smaller {
+.publika table .smaller {
   font-size: 70%;
 }
 
