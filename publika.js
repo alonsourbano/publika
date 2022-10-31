@@ -4,7 +4,12 @@
 
 const NOTIFICATION = {
   NOTIFICATION: { RESOLVE: "NOTIFICATION", API_KEY: "API_KEY_NOTIFICATION" },
-  READY: { RESOLVE: "READY", INIT: "INIT", CORE_INIT: "CORE_INIT" },
+  READY: {
+    RESOLVE: "READY",
+    INIT: "INIT",
+    CORE_INIT: "CORE_INIT",
+    FETCH_BATCH: "FETCH_BATCH"
+  },
   SEARCH_STOP: {
     FETCH: "SEARCH_STOP",
     REJECT: "REJECT_SEARCH_STOP",
@@ -149,10 +154,15 @@ Module.register("publika", {
 
   processReadyNotification: function (instance, notification, payload) {
     if (notification === NOTIFICATION.READY.RESOLVE) {
-      return instance.config.stops
+      const batch = instance.config.stops
         .filter((stop) => !stop.disabled)
         .filter(this.validateStopRules)
-        .forEach((stop) => {
+        .map((stop) => {
+          if (stop.type === "cluster") {
+            Log.error(this.translate("CLUSTER"));
+            this.notify(this.translate("CLUSTER"), 10);
+            return undefined;
+          }
           const { id, stopTimesCount, type, minutesFrom } = stop;
           const normalizedStop = {
             id: id ?? stop,
@@ -160,21 +170,22 @@ Module.register("publika", {
             type,
             minutesFrom
           };
-          if (stop.type === "cluster") {
-            Log.error(this.translate("CLUSTER"));
-            return this.notify(this.translate("CLUSTER"), 10);
-          }
           if (typeof stop === "string" && isNaN(stop)) {
-            return this.sendInstanceSocketNotification(
-              NOTIFICATION.SEARCH_STOP.FETCH,
-              normalizedStop
-            );
+            return {
+              notification: NOTIFICATION.SEARCH_STOP.FETCH,
+              payload: normalizedStop
+            };
           }
-          return this.sendInstanceSocketNotification(
-            NOTIFICATION.STOP_STOPTIMES.FETCH,
-            normalizedStop
-          );
-        });
+          return {
+            notification: NOTIFICATION.STOP_STOPTIMES.FETCH,
+            payload: normalizedStop
+          };
+        })
+        .filter((item) => item);
+      return this.sendInstanceSocketNotification(
+        NOTIFICATION.READY.FETCH_BATCH,
+        batch
+      );
     }
 
     this.rejectSocketNotification(notification, payload);

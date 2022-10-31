@@ -69,21 +69,24 @@ module.exports = NodeHelper.create({
       return this.sendInstanceSocketNotification(instance, "AWAKE", undefined);
     }
 
+    if (type === "FETCH_BATCH") {
+      return payload.forEach((item) => {
+        if (item.notification === "SEARCH_STOP") {
+          return this.fetchSearchStop(instance, item.payload);
+        }
+        if (item.notification === "FETCH_STOP_STOPTIMES") {
+          return this.fetchStopStoptimes(instance, item.payload);
+        }
+        Log.warn(`Unhandled socket notification ${notification}`, item.payload);
+      });
+    }
+
     if (type === "FETCH_STOP_STOPTIMES") {
-      return this.getStopSchedule(
-        payload,
-        (data) => this.resolve(instance, "RESOLVE_STOP_STOPTIMES", data),
-        (error) =>
-          this.reject(error, instance, "REJECT_STOP_STOPTIMES", payload)
-      );
+      return this.fetchStopStoptimes(instance, payload);
     }
 
     if (type === "SEARCH_STOP") {
-      return this.getStopSearch(
-        payload,
-        (data) => this.resolve(instance, "RESOLVE_SEARCH_STOP", data),
-        (error) => this.reject(error, instance, "REJECT_SEARCH_STOP", payload)
-      );
+      return this.fetchSearchStop(instance, payload);
     }
 
     if (["NOTIFICATION", "API_KEY_NOTIFICATION"].includes(type)) {
@@ -98,6 +101,22 @@ module.exports = NodeHelper.create({
 
   sendInstanceSocketNotification: function (instance, notification, payload) {
     this.sendSocketNotification(`${instance}::${notification}`, payload);
+  },
+
+  fetchStopStoptimes: function (instance, payload) {
+    this.getStopSchedule(
+      payload,
+      (data) => this.resolve(instance, "RESOLVE_STOP_STOPTIMES", data),
+      (error) => this.reject(error, instance, "REJECT_STOP_STOPTIMES", payload)
+    );
+  },
+
+  fetchSearchStop: function (instance, payload) {
+    this.getStopSearch(
+      payload,
+      (data) => this.resolve(instance, "RESOLVE_SEARCH_STOP", data),
+      (error) => this.reject(error, instance, "REJECT_SEARCH_STOP", payload)
+    );
   },
 
   resolve: function (instance, notification, data) {
