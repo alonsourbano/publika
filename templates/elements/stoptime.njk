@@ -1,54 +1,55 @@
 {% set vehicleType = stoptime.stop.vehicleMode %}
-{% if stoptime.stop.vehicleMode === "BUS" and stoptime.trip.route.type===702 %}
-{% set vehicleType = "bus-express" %}
+{% if stoptime.stop.vehicleMode === "BUS" and stoptime.trip.route.type === 702 %}
+  {% set vehicleType = "bus-express" %}
 {% endif %}
 <tr class="vehicle-{{vehicleType | lower}} {{functions.getStoptimeStyles(stop, stoptime)}}">
   {% if stoptime.cancelled %}
-  <td class="route-line">
-    <div>
-      {{stoptime.line}}
-    </div>
-  </td>
+    <td class="route-line">
+      <div>
+        {{stoptime.line}}
+      </div>
+    </td>
   {% else %}
-  <td class="route-line route-line-icon">
-    <div>
-      {% for item in stoptime.line | lower | list %}
-      <i class="{{" first" if loop.first}} {{"last" if loop.last}} fa-regular fa-{{item}}"></i>
-      {% endfor %}
-    </div>
-  </td>
+    <td class="route-line route-line-icon">
+      <div>
+        {% for item in stoptime.line | lower | list %}
+          <i class="{{"first" if loop.first}} {{"last" if loop.last}} fa-regular fa-{{item}}"></i>
+        {% endfor %}
+      </div>
+    </td>
   {% endif %}
   <td>
     {% set headsignAlerts = functions.getHeadsignAlerts(stop, stoptime) %}
     {% for headsignAlert in headsignAlerts %}
-    <i class="alert alert-{{headsignAlert | lower}} {{maps.alertSeverityLevels.get(headsignAlert)}}"></i>
+      <i class="alert alert-{{headsignAlert | lower}} {{maps.alertSeverityLevels.get(headsignAlert)}}"></i>
     {% endfor %}
     {{functions.getHeadsignText(stop, stoptime)}}
   </td>
   <td class="time smaller">
     {% if stoptime.cancelled %}
-    <i class="fa-solid fa-xmark"></i>
+      <i class="fa-solid fa-xmark"></i>
     {% else %}
-    {% set scheduledTimeIcon = "~" %}
-    {% if stoptime.realtime %}
-    {% set scheduledTimeIcon = "" %}
-    {% endif %}
-    {% if stoptime.remainingTime > 20 %}
-    {% elif stoptime.remainingTime === 0 %}
-    {{scheduledTimeIcon}}{{"NOW" | translate}}
-    {% elif stoptime.remainingTime > 0 %}
-    {{scheduledTimeIcon}}{{stoptime.remainingTime}} {{"MINUTES_ABBR" | translate}}
-    {% else %}
-    <i class="fa-solid fa-clock-rotate-left"></i>
-    {% endif %}
+      {% set scheduledTimeIcon = "" %}
+      {% if not stoptime.realtime and config.theme === "mono" %}
+        {% set scheduledTimeIcon = "~" %}
+      {% endif %}
+      {% if stoptime.remainingTime > 20 %}
+      {% elif stoptime.remainingTime === 0 %}
+        {{scheduledTimeIcon}}{{"NOW" | translate}}
+      {% elif stoptime.remainingTime > 0 %}
+        {{scheduledTimeIcon}}{{stoptime.remainingTime}}
+        {{"MINUTES_ABBR" | translate}}
+      {% else %}
+        <i class="fa-solid fa-clock-rotate-left"></i>
+      {% endif %}
     {% endif %}
   </td>
   <td class="time">
     {{stoptime.time | moment}}
   </td>
   {% if stop.stopsLength > 1 and stoptime.stop.platformCode %}
-  <td>
-    <span class="stop-platform smaller">{{stoptime.stop.platformCode}}</span>
-  </td>
+    <td>
+      <span class="stop-platform smaller">{{stoptime.stop.platformCode}}</span>
+    </td>
   {% endif %}
 </tr>

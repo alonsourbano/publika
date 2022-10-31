@@ -1,24 +1,33 @@
 {% if context.locationType %}
-<tr class="stop-subheader">
-  <td colspan="{{defaults.colspan-1}}">
-    {% if context.locationType === "STOP" %}
-    <span>{{context.desc}}</span>
-    <span class="stop-code">{{context.code}}</span>
-    {% if context.platformCode %}
-    <span>{{maps.platformNames.get(context.vehicleMode)}}</span>
-    <span class="stop-platform">{{context.platformCode}}</span>
-    {% endif %}
-    <span class="stop-zone"><i class="fa-solid fa-{{context.zoneId | lower}}"></i></span>
-    {% else %}
-    <span class="stop-code">{{context.locationType | translate}}</span>
-    <span class="stop-zone"><i class="fa-solid fa-{{context.zoneId | lower}}"></i></span>
-    {% endif %}
-  </td>
-  {% if context.minutesFrom %}
-  <td class="minutes-from">
-    {{["+", context.minutesFrom | string] | join if context.minutesFrom > 0 else context.minutesFrom}}{{"MINUTES_ABBR"
+  <tr class="stop-subheader">
+    <td colspan="{{defaults.colspan-1}}">
+      {% if context.locationType === "STOP" %}
+        <span>{{context.desc}}</span>
+        <span class="stop-code">{{context.code}}</span>
+        {% if context.platformCode %}
+          <span>{{maps.platformNames.get(context.vehicleMode)}}</span>
+          <span class="stop-platform">{{context.platformCode}}</span>
+        {% endif %}
+        <span class="stop-zone">
+          <i class="fa-solid fa-{{context.zoneId | lower}}"></i>
+        </span>
+      {% elif context.locationType === "BIKE_STATION" %}
+        <span>{{context.locationType | translate}}</span>
+        {% if context.id | int %}
+          <span class="stop-code">{{context.id}}</span>
+        {% endif %}
+      {% else %}
+        <span class="stop-code">{{context.locationType | translate}}</span>
+        <span class="stop-zone">
+          <i class="fa-solid fa-{{context.zoneId | lower}}"></i>
+        </span>
+      {% endif %}
+    </td>
+    {% if context.minutesFrom %}
+      <td class="minutes-from">
+        {{["+", context.minutesFrom | string] | join if context.minutesFrom > 0 else context.minutesFrom}}{{"MINUTES_ABBR"
     | translate}}
-  </td>
-  {% endif %}
-</tr>
+      </td>
+    {% endif %}
+  </tr>
 {% endif %}

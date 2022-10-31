@@ -4,6 +4,7 @@ const fetch = require("node-fetch");
 const NodeHelper = require("node_helper");
 const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
 const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
+const getHSLBikeStationQuery = require("./HSL-graphiql/bike-station");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
@@ -78,8 +79,18 @@ module.exports = NodeHelper.create({
         if (item.notification === "FETCH_STOP_STOPTIMES") {
           return this.fetchStopStoptimes(instance, item.payload);
         }
-        Log.warn(`Unhandled socket notification ${notification}`, item.payload);
+        if (item.notification === "FETCH_BIKE_STATION") {
+          return this.fetchBikeStation(instance, item.payload);
+        }
+        Log.warn(
+          `Unhandled socket notification ${item.notification}`,
+          item.payload
+        );
       });
+    }
+
+    if (type === "FETCH_BIKE_STATION") {
+      return this.fetchBikeStation(instance, payload);
     }
 
     if (type === "FETCH_STOP_STOPTIMES") {
@@ -109,6 +120,14 @@ module.exports = NodeHelper.create({
       payload,
       (data) => this.resolve(instance, "RESOLVE_STOP_STOPTIMES", data),
       (error) => this.reject(error, instance, "REJECT_STOP_STOPTIMES", payload)
+    );
+  },
+
+  fetchBikeStation: function (instance, payload) {
+    this.getBikeStation(
+      payload,
+      (data) => this.resolve(instance, "RESOLVE_BIKE_STATION", data),
+      (error) => this.reject(error, instance, "REJECT_BIKE_STATION", payload)
     );
   },
 
@@ -244,6 +263,38 @@ module.exports = NodeHelper.create({
                 }))
                 .sort((a, b) => moment(a.endTime).diff(moment(b.endTime)))
                 .sort((a, b) => moment(a.startTime).diff(moment(b.startTime)))
+            }
+          });
+        })
+        .catch((error) => reject(error));
+    } catch (error) {
+      return reject(error);
+    }
+  },
+
+  getBikeStation: function (stop, resolve, reject) {
+    try {
+      fetch(this.initData.digiTransit.apiUrl, {
+        method: "POST",
+        body: getHSLBikeStationQuery(stop.id),
+        headers: this.getHeaders()
+      })
+        .then(NodeHelper.checkFetchStatus)
+        .then((response) => response.json())
+        .then((json) => {
+          if (!json.data) {
+            return reject("No data");
+          }
+          const data = json.data.bikeRentalStation;
+          if (!data) {
+            return reject(`No bike station data for ${stop.id}`);
+          }
+          return resolve({
+            ...stop,
+            data: {
+              name: data.name,
+              responseType: "BIKE_STATION",
+              bikeRentalStation: data
             }
           });
         })

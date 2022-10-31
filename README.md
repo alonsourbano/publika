@@ -60,6 +60,10 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 ![Station with platform](docs/wujpuvps.png)
 
+- Bike station:
+
+![Bike station](docs/klgxnlle.png)
+
 - Show a warning when data hasn't been fetched in a while (For example when MagicMirror<sup>2</sup> is down):
 
 ![Show a warning when data hasn't been fetched in a while](docs/qvligjut.png)
@@ -103,7 +107,6 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 {
   config: {
     stops: [
-      "H0082",
       { id: 1000105, type: "station" },
       1020453,
     ]
@@ -111,7 +114,6 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 }
 ```
 
-- A string represents a stop code to search for, or the stop name to search for
 - A number represents the stop ID, which is needed for actually displaying stop data
 
 `StopObject`:
@@ -121,6 +123,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | id | yes | `number` | `undefined` | ID of the stop or station | `1020453` |
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
 | type | no | `string` | `stop` | Only needed when using station, otherwise assumed to be a stop | `"station"` |
+| search | no | `string` | `stop` | Stop code or name to search for | `"H0082"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |

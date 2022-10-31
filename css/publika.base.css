@@ -100,6 +100,20 @@
   padding-top: 5px;
 }
 
+.publika-base .bike-station progress[value] {
+  accent-color: #999;
+  width: 100%;
+}
+
+.publika-base .bike-off-season th {
+  max-width: 1px;
+  white-space: normal;
+}
+
+.publika-base .bike-off-season th span {
+  font-size: smaller;
+}
+
 @keyframes blinker {
   50% {
     opacity: 0;

@@ -1,13 +1,13 @@
 {% if data.notifications.length %}
-<div class="notification">
-  <table id="notifications">
-    {% for notification in data.notifications %}
-    <tr>
-      <td colspan="{{defaults.colspan}}">
-        {{notification.message}}
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-</div>
+  <div class="notification">
+    <table id="notifications">
+      {% for notification in data.notifications %}
+        <tr>
+          <td colspan="{{defaults.colspan}}">
+            {{notification.message}}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
 {% endif %}

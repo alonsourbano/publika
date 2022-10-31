@@ -1,8 +1,15 @@
-/* global nunjucks */
+/* global moment, nunjucks */
 
 // Based on code from Sami Mäkinen (https://github.com/ZakarFin)
 
 const NOTIFICATION = {
+  BIKE: {
+    STATION: {
+      FETCH: "FETCH_BIKE_STATION",
+      REJECT: "REJECT_BIKE_STATION",
+      RESOLVE: "RESOLVE_BIKE_STATION"
+    }
+  },
   NOTIFICATION: { RESOLVE: "NOTIFICATION", API_KEY: "API_KEY_NOTIFICATION" },
   READY: {
     RESOLVE: "READY",
@@ -155,7 +162,7 @@ Module.register("publika", {
 
   processReadyNotification: function (instance, notification, payload) {
     if (notification === NOTIFICATION.READY.RESOLVE) {
-      const batch = instance.config.stops
+      const batch = instance.stops
         .filter((stop) => !stop.disabled)
         .filter(this.validateStopRules)
         .map((stop) => {
@@ -164,22 +171,27 @@ Module.register("publika", {
             this.notify(this.translate("CLUSTER"), 10);
             return undefined;
           }
-          const { id, stopTimesCount, type, minutesFrom } = stop;
-          const normalizedStop = {
-            id: id ?? stop,
-            stopTimesCount: stopTimesCount ?? instance.config.stopTimesCount,
-            type,
-            minutesFrom
-          };
-          if (typeof stop === "string" && isNaN(stop)) {
+          if (stop.search) {
             return {
               notification: NOTIFICATION.SEARCH_STOP.FETCH,
-              payload: normalizedStop
+              payload: { id: stop.id }
+            };
+          }
+          const { id, stopTimesCount, type, minutesFrom } = stop;
+          if (type === "bikeStation") {
+            return {
+              notification: NOTIFICATION.BIKE.STATION.FETCH,
+              payload: { id, type }
             };
           }
           return {
             notification: NOTIFICATION.STOP_STOPTIMES.FETCH,
-            payload: normalizedStop
+            payload: {
+              id: id ?? stop,
+              stopTimesCount: stopTimesCount ?? instance.config.stopTimesCount,
+              type,
+              minutesFrom
+            }
           };
         })
         .filter((item) => item);
@@ -219,6 +231,34 @@ Module.register("publika", {
 
     if (notification === NOTIFICATION.WATCHER.FEED) {
       return this.sendCoreInitNotification(instance);
+    }
+
+    this.rejectSocketNotification(notification, payload);
+  },
+
+  processBikeStationNotification: function (instance, notification, payload) {
+    const { data, ...stop } = payload;
+
+    if (notification === NOTIFICATION.BIKE.STATION.RESOLVE) {
+      if (this.validateStopRules(stop)) {
+        setTimeout(() => {
+          this.sendInstanceSocketNotification(
+            NOTIFICATION.BIKE.STATION.FETCH,
+            stop
+          );
+        }, this.getNextInterval(instance.intervals.update.bikeStation));
+      }
+      return this.updateStoptime(instance, stop, data);
+    }
+
+    if (notification === NOTIFICATION.BIKE.STATION.REJECT) {
+      setTimeout(() => {
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.BIKE.STATION.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.retry));
+      return this.rejectStoptime(instance, stop.id);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -276,6 +316,15 @@ Module.register("publika", {
       this.checkSocketNotification(notificationType, NOTIFICATION.SEARCH_STOP)
     ) {
       return this.processSearchStopNotification(
+        instance,
+        notificationType,
+        payload
+      );
+    }
+    if (
+      this.checkSocketNotification(notificationType, NOTIFICATION.BIKE.STATION)
+    ) {
+      return this.processBikeStationNotification(
         instance,
         notificationType,
         payload
@@ -435,12 +484,13 @@ Module.register("publika", {
         core: modules.length === 1 || module.config.core,
         intervals: {
           update: {
-            remainingTimeWatcher: 5 * 1000,
-            socketWatcher: 100 * 1000,
-            updateStatusWatcher: 5 * 1000,
-            default: 45 * 1000
+            remainingTimeWatcher: 5 * 100000000,
+            socketWatcher: 100 * 100000000,
+            updateStatusWatcher: 5 * 100000000,
+            bikeStation: 100 * 100000000,
+            default: 45 * 100000000
           },
-          retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
+          retry: [1 * 100000000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
         },
         notifications: [],
         sentNotifications: [],
@@ -454,6 +504,16 @@ Module.register("publika", {
           }))
       }));
     const instance = this.getInstance();
+    if (!this.isBikeSeason()) {
+      instance.stops = instance.stops.reduce(
+        (p, c) =>
+          c.type === "bikeStation" &&
+            p.some((item) => item.type === "bikeStation")
+            ? p
+            : p.concat(c),
+        []
+      );
+    }
     if (instance.config?.theme) {
       this.loadStyles(() => {
         Log.log("Styles reloaded");
@@ -541,12 +601,20 @@ Module.register("publika", {
     const index = instance.stops.findIndex(
       (stoptime) => stoptime.id === stop.id
     );
-    const { stopTimes, alerts, stops, stopsLength, ...meta } = data;
+    const {
+      alerts,
+      bikeRentalStation,
+      stops,
+      stopsLength,
+      stopTimes,
+      ...meta
+    } = data;
     instance.stops[index].stoptimes = stopTimes;
     instance.stops[index].stopsLength = stopsLength;
     instance.stops[index].meta = meta;
     instance.stops[index].alerts = alerts;
     instance.stops[index].searchStops = stops;
+    instance.stops[index].bikeRentalStation = bikeRentalStation;
     instance.stops[index].updateTime = moment();
     instance.stops[index].updateAge = 0;
     this.updateDom();
@@ -730,6 +798,7 @@ Module.register("publika", {
             }
             return styles.join(" ");
           },
+          isBikeSeason: () => this.isBikeSeason(),
           validateStopRules: (stop) => this.validateStopRules(stop)
         },
         maps: {
@@ -741,7 +810,7 @@ Module.register("publika", {
           ]),
           platformNames: new Map([
             ["AIRPLANE", this.translate("PLATFORM")],
-            ["BICYCLE", this.translate("PLATFORM")],
+            ["BICYCLE", this.translate("BIKE_STATION")],
             ["BUS", this.translate("PLATFORM")],
             ["CABLE_CAR", this.translate("TRACK")],
             ["CAR", this.translate("PLATFORM")],
@@ -829,5 +898,12 @@ Module.register("publika", {
         ? alert[wantedField].filter((item) => item.language === config.language)
         : undefined;
     return wantedText?.length ? wantedText.at(0).text : alert[field];
+  },
+
+  isBikeSeason: function () {
+    return moment().isBetween(
+      moment("20220401", "YYYYMMDD"),
+      moment("20221101", "YYYYMMDD")
+    );
   }
 });
