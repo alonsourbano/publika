@@ -52,10 +52,10 @@ minutesFrom: stop.minutesFrom
 {% for stopAlert in stopAlerts %}
 {% set agedStyle = functions.getAgedStyle(stop) %}
 <tr class="{{agedStyle}}">
-  <td data-function="stop-stoptimes">&nbsp;</td>
-  <td class="alert" colspan="{{defaults.colspan-1}}">
+  <td data-context="stop-stoptimes">&nbsp;</td>
+  <td class="alert alert-full" colspan="{{defaults.colspan-1}}">
     <i class="{{maps.alertSeverityLevels.get(stopAlert.icon)}}"></i>
-    {{stopAlert.effect}}
+    {{stopAlert.text}}
   </td>
 </tr>
 {% endfor %}
