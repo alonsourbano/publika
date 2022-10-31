@@ -1,5 +1,6 @@
-.publika .module-content {
+.publika .timetable {
   text-align: left;
+  white-space: nowrap;
 }
 
 .publika .stop-subheader td {
@@ -64,6 +65,10 @@
   padding: 1px 5px;
 }
 
+.publika table .stop-platform.smaller {
+  font-size: 60%;
+}
+
 .publika table .stop-zone {
   border: 1px solid;
   border-radius: 16px;
@@ -88,6 +93,12 @@
 
 .publika table .alert {
   font-size: 80%;
+}
+
+.publika table .alert-full {
+  max-width: 1px;
+  white-space: normal;
+  padding: 5px 0 0 5px;
 }
 
 @keyframes blinker {
