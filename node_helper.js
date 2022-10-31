@@ -15,6 +15,7 @@ const processStopTimeData = (json) =>
     time: getTime(stoptime),
     realtime: stoptime.realtime,
     cancelled: stoptime.realtimeState === "CANCELED",
+    stop: stoptime.stop,
     trip: {
       gtfsId: stoptime.trip.gtfsId,
       route: {
@@ -192,6 +193,7 @@ module.exports = NodeHelper.create({
               platformCode: data.platformCode,
               zoneId: data.zoneId,
               locationType: data.locationType,
+              stopsLength: data.stops.length,
               stopTimes: processStopTimeData(data),
               alerts: [
                 ...data.alerts,
