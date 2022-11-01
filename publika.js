@@ -631,40 +631,48 @@ Module.register("publika", {
   },
 
   validateStopRules: function (stop) {
+    const validateRule = (rule) => {
+      if (rule.days) {
+        const visible = rule.days.includes(moment().day());
+        if (!visible) {
+          return false;
+        }
+      }
+      if (rule.startTime) {
+        const start = moment(rule.startTime, "HH:mm");
+        if (!start.isValid()) {
+          Log.error("Invalid date rule definition", rule.startTime);
+          return true;
+        }
+        const visible = start <= moment();
+        if (!visible) {
+          return false;
+        }
+      }
+      if (rule.endTime) {
+        const end = moment(rule.endTime, "HH:mm");
+        if (!end.isValid()) {
+          Log.error("Invalid date rule definition", rule.endTime);
+          return true;
+        }
+        const visible = end >= moment();
+        if (!visible) {
+          return false;
+        }
+      }
+      return true;
+    };
     if (!stop.rules) {
       return true;
     }
     try {
       for (const rule of stop.rules) {
-        if (rule.days) {
-          const visible = rule.days.includes(moment().day());
-          if (!visible) {
-            return false;
-          }
-        }
-        if (rule.startTime) {
-          const start = moment(rule.startTime, "HH:mm");
-          if (!start.isValid()) {
-            Log.error("Invalid date rule definition", rule.startTime);
-            return true;
-          }
-          const visible = start <= moment();
-          if (!visible) {
-            return false;
-          }
-        }
-        if (rule.endTime) {
-          const end = moment(rule.endTime, "HH:mm");
-          if (!end.isValid()) {
-            Log.error("Invalid date rule definition", rule.endTime);
-            return true;
-          }
-          const visible = end >= moment();
-          if (!visible) {
-            return false;
-          }
+        const valid = validateRule(rule);
+        if (valid) {
+          return true;
         }
       }
+      return false;
     } catch (error) {
       Log.error(error);
     }
