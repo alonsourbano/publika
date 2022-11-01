@@ -87,3 +87,8 @@
 .publika-color .bike-station progress[value].green {
   accent-color: #46850e;
 }
+
+.publika-color #notifications .notification {
+  background-color: #f2b62d;
+  color: #000;
+}

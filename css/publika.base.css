@@ -16,16 +16,20 @@
   margin-left: 0px;
 }
 
-.publika-base .notification {
-  float: right;
-  position: absolute;
-  background-color: black;
+.publika-base #notifications {
+  margin-bottom: 10px;
 }
 
-.publika-base .notification table td {
+.publika-base #notifications .notification {
   border: 1px solid;
   border-radius: 5px;
-  padding: 30px;
+  padding: 10px;
+  max-width: 1px;
+  text-align: left;
+}
+
+.publika-base #notifications .notification-div {
+  font-size: 10px;
 }
 
 .publika-base .now {
