@@ -3,14 +3,20 @@
   <table id="stoptimes">
     <tbody>
       {% for stop in data.stops %}
-      {% if stop.meta.responseType==="STOP_SEARCH" %}
-      {% include "templates/elements/stop-search.njk" %}
-      {% else %}
-      {% include "templates/elements/stop-stoptimes.njk" %}
-      {% endif %}
-      <tr>
-        <td data-context="default.normal">&nbsp;</td>
-      </tr>
+        {% if stop.search === "stop" %}
+          {% include "templates/elements/stop-search.njk" %}
+        {% elif stop.type === "bikeStation" %}
+          {% if functions.isBikeSeason() %}
+            {% include "templates/elements/bike-station.njk" %}
+          {% else %}
+            {% include "templates/elements/bike-station-off.njk" %}
+          {% endif %}
+        {% else %}
+          {% include "templates/elements/stop-stoptimes.njk" %}
+        {% endif %}
+        <tr>
+          <td data-context="default.normal">&nbsp;</td>
+        </tr>
       {% endfor %}
     </tbody>
   </table>

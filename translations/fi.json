@@ -9,6 +9,7 @@
   "SETUP_MODULE": "Aseta pysäkit tiedostossa config.js",
   "UPDATE_OLD": "Pysäkin tietoja ei ole päivitetty vähään aikaan",
   "CLUSTER": "Klusterit on poistettu käytöstä",
+  "BIKE_STATION": "Kaupunkipyöräasema",
   "PIER": "Laituri",
   "PLATFORM": "Laituri",
   "STATION": "Asema",
@@ -33,5 +34,8 @@
   "OTHER_EFFECT": "Muu vaikutus",
   "UNKNOWN_EFFECT": "Tuntematon vaikutus",
   "STOP_MOVED": "Pysäkki siirretty",
-  "NO_EFFECT": "Ei vaikutusta"
+  "NO_EFFECT": "Ei vaikutusta",
+  "BIKE_STATION_AVAILABILITY": "Pyöriä asemalla juuri nyt",
+  "OFF_SEASON": "Tervetuloa kaupunkipyöräilijäksi taas keväällä!",
+  "OFF_SEASON_DESC": "Kaupunkipyörät ovat käytössä huhtikuun alusta lokakuun loppuun asti."
 }

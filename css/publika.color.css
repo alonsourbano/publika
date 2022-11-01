@@ -71,6 +71,23 @@
   color: #46850e;
 }
 
+.publika-color .bike-station progress[value] {
+  /* background-color: #ddd; */
+  width: 100%;
+}
+
+.publika-color .bike-station progress[value].red {
+  accent-color: #ca4000;
+}
+
+.publika-color .bike-station progress[value].yellow {
+  accent-color: #f2b62d;
+}
+
+.publika-color .bike-station progress[value].green {
+  accent-color: #46850e;
+}
+
 .publika-color #notifications .notification {
   background-color: #f2b62d;
   color: #000;

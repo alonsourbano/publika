@@ -1,0 +1,41 @@
+{% if functions.validateStopRules(stop) %}
+  <tr class="stop-header bright" data-source="{{stop | dump if config.debug else "prod"}}">
+    <th colspan="{{defaults.colspan}}">
+      <i class="fa-solid fa-bicycle"></i>
+      {% if stop.meta %}
+        {{stop.meta.name}}
+      {% else %}
+        {{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
+      {% endif %}
+    </th>
+  </tr>
+  {% set context = {
+    id: stop.bikeRentalStation.stationId,
+    locationType: stop.meta.responseType
+  } | contextualize %}
+  {% include "templates/elements/sub-header.njk" %}
+  {% if stop.bikeRentalStation.realtime %}
+    <tr class="bike-station">
+      <td colspan="{{defaults.colspan}}">{{"BIKE_STATION_AVAILABILITY" | translate}} ({{stop.bikeRentalStation.bikesAvailable}}/{{stop.bikeRentalStation.capacity}})</td>
+    </tr>
+    <tr class="bike-station">
+      <td colspan="{{defaults.colspan}}">
+        {% set progress = (stop.bikeRentalStation.bikesAvailable | int / stop.bikeRentalStation.capacity | int * 100) | round %}
+        {% set availability = "green" %}
+        {% if progress < 15 %}
+          {% set availability = "red" %}
+        {% elif progress < 35 %}
+          {% set availability = "yellow" %}
+        {% endif %}
+        <progress class="{{availability}}" value="{{progress}}" max="100"></progress>
+      </td>
+    </tr>
+  {% else %}
+    <tr class="bike-station">
+      <td colspan="{{defaults.colspan}}">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        {{"NO_DATA" | translate}}
+      </td>
+    </tr>
+  {% endif %}
+{% endif %}

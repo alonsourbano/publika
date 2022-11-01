@@ -19,6 +19,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Amount of stops to display can be configured for all stops or individually
 - Displays disruptions (alerts) for services and stops/stations using different icons depending on severity
 - Blinks when service departure time is less than one minute
+- **New** Can also display city bike stations
 - Can display one stop or the whole station
   - For example, one train station has at least two stops, aka tracks. Some bus stations has several platforms
 - Can set a delay start to a stop
@@ -59,6 +60,10 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Station with platform:
 
 ![Station with platform](docs/wujpuvps.png)
+
+- Bike station:
+
+![Bike station](docs/klgxnlle.png)
 
 - Show a warning when data hasn't been fetched in a while (For example when MagicMirror<sup>2</sup> is down):
 
@@ -103,24 +108,25 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 {
   config: {
     stops: [
-      "H0082",
-      { id: 1000105, type: "station" },
+      { id: "H0082", search: "stop" },
       1020453,
+      { id: 1000105, type: "station" },
+      { id: 218, type: "bikeStation" }
     ]
   }
 }
 ```
 
-- A string represents a stop code to search for, or the stop name to search for
 - A number represents the stop ID, which is needed for actually displaying stop data
 
 `StopObject`:
 
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
-| id | yes | `number` | `undefined` | ID of the stop or station | `1020453` |
+| id | yes | `number` | `undefined` | ID of the stop, station, or city bike station | `1020453` |
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
-| type | no | `string` | `stop` | Only needed when using station, otherwise assumed to be a stop | `"station"` |
+| type | no | `string` | `stop` | Only needed when using station (`"station"`) or bike station (`"bikeStation"`), otherwise assumed to be a stop | `"station"` |
+| search | no | `string` | `stop` | Type of search to perform. At this moment only stop search is supported. | `"stop"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
