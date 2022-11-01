@@ -3,9 +3,9 @@
   <table id="stoptimes">
     <tbody>
       {% for stop in data.stops %}
-        {% if stop.meta.responseType === "STOP_SEARCH" %}
+        {% if stop.search === "stop" %}
           {% include "templates/elements/stop-search.njk" %}
-        {% elif stop.meta.responseType === "BIKE_STATION" %}
+        {% elif stop.type === "bikeStation" %}
           {% if functions.isBikeSeason() %}
             {% include "templates/elements/bike-station.njk" %}
           {% else %}
