@@ -71,7 +71,7 @@
   color: #46850e;
 }
 
-.publika-color .notification {
+.publika-base #notifications .notification {
   background-color: #f2b62d;
   color: #000;
 }
