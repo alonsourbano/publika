@@ -25,6 +25,15 @@ module.exports = (type, stop, count, startTime) => {
         trip {
           gtfsId
           routeShortName
+          stoptimes {
+            scheduledDeparture
+            realtimeDeparture
+            realtime
+            stop {
+              gtfsId
+              name
+            }
+          }
           route {
             gtfsId
             type

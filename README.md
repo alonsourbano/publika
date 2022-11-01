@@ -51,7 +51,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 - Stop with disruptions (alerts):
 
-![Stop with disruptions](docs/wftgxqzu.png)
+![Stop with disruptions](docs/qxvssxef.png)
 
 - Stop with cancelled trips:
 
@@ -64,6 +64,10 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 - Bike station:
 
 ![Bike station](docs/klgxnlle.png)
+
+- Estimated time of arrival to a second station:
+
+![Estimated time of arrival to a second station](docs/qcdetmzp.png)
 
 - Show a warning when data hasn't been fetched in a while (For example when MagicMirror<sup>2</sup> is down):
 
@@ -111,7 +115,8 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
       { id: "H0082", search: "stop" },
       1020453,
       { id: 1000105, type: "station" },
-      { id: 218, type: "bikeStation" }
+      { id: 218, type: "bikeStation" },
+      { id: 1291502, eta: 4610551 }
     ]
   }
 }
@@ -126,12 +131,13 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | id | yes | `number` | `undefined` | ID of the stop, station, or city bike station | `1020453` |
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
 | type | no | `string` | `stop` | Only needed when using station (`"station"`) or bike station (`"bikeStation"`), otherwise assumed to be a stop | `"station"` |
-| search | no | `string` | `stop` | Type of search to perform. At this moment only stop search is supported. | `"stop"` |
+| search | no | `string` | `stop` | Type of search to perform. At this moment only stop search is supported | `"stop"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
 | headsignViaTo | no | `boolean` | Same as parent `headsignViaTo` if set, otherwise `false` | Show headsign in the form via-destination for this particular stop. For example: Myyrmäki - Lentoasema. Requires `fullHeadsign` to be `true` | `true` |
 | rules | no | `array<StopRule>` | `undefined` | Set of rules for showing this stop/station | See below |
+| eta | no | `number` | `undefined` | Estimated time of arrival to this stop. It has to be a stop and it has to be in the same direction. | `4610551` |
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false` |
 
 `StopRule`:

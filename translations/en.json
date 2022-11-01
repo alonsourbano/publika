@@ -35,6 +35,7 @@
   "UNKNOWN_EFFECT": "Unknown effect",
   "STOP_MOVED": "Stop moved",
   "NO_EFFECT": "No effect",
+  "ETA_NO_STOP": "ETA is only available for stops",
   "BIKE_STATION_AVAILABILITY": "Bikes available at the station right now",
   "OFF_SEASON": "Welcome to use the city bikes again in the spring!",
   "OFF_SEASON_DESC": "City bikes are available from the beginning of April until the end of October."

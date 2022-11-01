@@ -47,7 +47,12 @@
   <td class="time">
     {{stoptime.time | moment}}
   </td>
-  {% if stop.stopsLength > 1 and stoptime.stop.platformCode %}
+  {% if stoptime.eta.time %}
+    <td class="eta eta-{{"realtime" if stoptime.eta.realtime else "schedule"}}">
+      <i class="fa-solid fa-arrow-right-long"></i>
+      {{stoptime.eta.time | moment}}
+    </td>
+  {% elif stop.stopsLength > 1 and stoptime.stop.platformCode %}
     <td>
       <span class="stop-platform smaller">{{stoptime.stop.platformCode}}</span>
     </td>
