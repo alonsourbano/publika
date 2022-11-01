@@ -107,6 +107,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 {
   config: {
     stops: [
+      { id: "H0082", search: "stop" },
       { id: 1000105, type: "station" },
       1020453,
     ]
@@ -123,7 +124,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | id | yes | `number` | `undefined` | ID of the stop or station | `1020453` |
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
 | type | no | `string` | `stop` | Only needed when using station, otherwise assumed to be a stop | `"station"` |
-| search | no | `string` | `stop` | Stop code or name to search for | `"H0082"` |
+| search | no | `string` | `stop` | Type of search to perform. At this moment only stop search is supported. | `"stop"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |

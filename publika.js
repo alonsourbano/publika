@@ -240,7 +240,7 @@ Module.register("publika", {
     const { data, ...stop } = payload;
 
     if (notification === NOTIFICATION.BIKE.STATION.RESOLVE) {
-      if (this.validateStopRules(stop)) {
+      if (this.validateStopRules(stop) && this.isBikeSeason()) {
         setTimeout(() => {
           this.sendInstanceSocketNotification(
             NOTIFICATION.BIKE.STATION.FETCH,
@@ -484,13 +484,13 @@ Module.register("publika", {
         core: modules.length === 1 || module.config.core,
         intervals: {
           update: {
-            remainingTimeWatcher: 5 * 100000000,
-            socketWatcher: 100 * 100000000,
-            updateStatusWatcher: 5 * 100000000,
-            bikeStation: 100 * 100000000,
-            default: 45 * 100000000
+            remainingTimeWatcher: 5 * 1000,
+            socketWatcher: 100 * 1000,
+            updateStatusWatcher: 5 * 1000,
+            bikeStation: 45 * 1000,
+            default: 45 * 1000
           },
-          retry: [1 * 100000000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
+          retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
         },
         notifications: [],
         sentNotifications: [],

@@ -5,7 +5,7 @@
       {% if stop.meta %}
         {{stop.meta.name}}
       {% else %}
-        {{stop.id}}
+        {{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
       {% endif %}
     </th>
   </tr>
