@@ -12,8 +12,10 @@ const processStopTimeData = (json) =>
   json.stoptimesWithoutPatterns.map((stoptime) => ({
     line: stoptime.trip.routeShortName,
     headsign: stoptime.headsign,
-    remainingTime: getRemainingTime(getTime(stoptime)),
-    time: getTime(stoptime),
+    remainingTime: getRemainingTime(
+      moment((stoptime.serviceDay + stoptime.realtimeDeparture) * 1000)
+    ),
+    time: moment((stoptime.serviceDay + stoptime.realtimeDeparture) * 1000),
     realtime: stoptime.realtime,
     cancelled: stoptime.realtimeState === "CANCELED",
     stop: stoptime.stop,
@@ -22,16 +24,15 @@ const processStopTimeData = (json) =>
       route: {
         gtfsId: stoptime.trip.route.gtfsId,
         type: stoptime.trip.route.type
-      }
+      },
+      stoptimes: stoptime.trip.stoptimes
+        .filter((item) => item.scheduledDeparture > stoptime.scheduledDeparture)
+        .map((item) => ({
+          ...item,
+          time: moment((stoptime.serviceDay + item.realtimeDeparture) * 1000)
+        }))
     }
   }));
-
-const getTime = (stoptime) =>
-  moment(
-    (stoptime.serviceDay +
-      (stoptime.realtimeDeparture ?? stoptime.scheduledDeparture)) *
-    1000
-  );
 
 const getRemainingTime = (time) =>
   Math.round(moment.duration(time.diff(moment())).asMinutes());

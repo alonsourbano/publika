@@ -22,6 +22,15 @@
       trip {
         gtfsId
         routeShortName
+        stoptimes {
+          scheduledDeparture
+          realtimeDeparture
+          realtime
+          stop {
+            gtfsId
+            name
+          }
+        }
         route {
           gtfsId
           type

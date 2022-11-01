@@ -605,6 +605,9 @@ Module.register("publika", {
     const index = instance.stops.findIndex(
       (stoptime) => stoptime.id === stop.id
     );
+    const configIndex = instance.config.stops.findIndex(
+      (stoptime) => stoptime.id === stop.id
+    );
     const {
       alerts,
       bikeRentalStation,
@@ -614,6 +617,7 @@ Module.register("publika", {
       ...meta
     } = data;
     instance.stops[index].stoptimes = stopTimes;
+    instance.stops[index].config = instance.config.stops[configIndex];
     instance.stops[index].stopsLength = stopsLength;
     instance.stops[index].meta = meta;
     instance.stops[index].alerts = alerts;
@@ -621,6 +625,28 @@ Module.register("publika", {
     instance.stops[index].bikeRentalStation = bikeRentalStation;
     instance.stops[index].updateTime = moment();
     instance.stops[index].updateAge = 0;
+    if (instance.stops[index].config.eta) {
+      if (
+        instance.stops[index].config.type === "stop" ||
+        instance.stops[index].config.type === undefined
+      ) {
+        var destination = undefined;
+        instance.stops[index].stoptimes.forEach((stoptime) => {
+          stoptime.eta = stoptime.trip.stoptimes.find(
+            (item) =>
+              parseInt(item.stop.gtfsId.split(":").at(1)) ===
+              instance.stops[index].config.eta
+          );
+          if (stoptime.eta?.stop?.name && destination === undefined) {
+            destination = stoptime.eta.stop.name;
+            instance.stops[index].destination = destination;
+          }
+          stoptime.trip.stoptimes = undefined;
+        });
+      } else {
+        this.notify(this.translate("ETA_NO_STOP"), 10);
+      }
+    }
     this.updateDom();
   },
 

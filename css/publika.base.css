@@ -118,6 +118,10 @@
   font-size: smaller;
 }
 
+.publika-base .eta {
+  font-size: 70%;
+}
+
 @keyframes blinker {
   50% {
     opacity: 0;

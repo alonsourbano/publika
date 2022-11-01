@@ -1,12 +1,26 @@
 {% if functions.validateStopRules(stop) %}
   <tr class="stop-header bright" data-source="{{stop | dump if config.debug else "prod"}}">
     {% if stop.meta %}
-      <th colspan="{{defaults.colspan}}">
+      <th colspan="{{defaults.colspan+1}}">
         <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
         {{stop.meta.name}}{{[" - ", stop.name] | join if stop.name}}
+        {% if stop.eta %}
+          <i class="fa-solid fa-arrow-right-long"></i>
+          {% if stop.destination %}
+            {{stop.destination}}
+          {% else %}
+            HSL:{{stop.eta}}
+          {% endif %}
+        {% endif %}
       </th>
     {% else %}
-      <th colspan="{{defaults.colspan}}">HSL:{{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}</th>
+      <th colspan="{{defaults.colspan}}">
+        HSL:{{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
+        {% if stop.eta %}
+          <i class="fa-solid fa-arrow-right-long"></i>
+          HSL:{{stop.eta}}
+        {% endif %}
+      </th>
     {% endif %}
   </tr>
   {% set context = [
