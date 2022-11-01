@@ -179,10 +179,14 @@ Module.register("publika", {
           }
           const { id, stopTimesCount, type, minutesFrom } = stop;
           if (type === "bikeStation") {
-            return {
-              notification: NOTIFICATION.BIKE.STATION.FETCH,
-              payload: { id, type }
-            };
+            if (this.isBikeSeason()) {
+              return {
+                notification: NOTIFICATION.BIKE.STATION.FETCH,
+                payload: { id, type }
+              };
+            }
+            this.notify(this.translate("OFF_SEASON_DESC"), 10);
+            return undefined;
           }
           return {
             notification: NOTIFICATION.STOP_STOPTIMES.FETCH,

@@ -36,5 +36,6 @@
   "STOP_MOVED": "Stopp flyttas",
   "NO_EFFECT": "Ingen effekt",
   "BIKE_STATION_AVAILABILITY": "Antal cyklar just nu",
-  "OFF_SEASON": "Välkommen som användare av stadscyklar igen nästa vår!"
+  "OFF_SEASON": "Välkommen som användare av stadscyklar igen nästa vår!",
+  "OFF_SEASON_DESC": "Stadscykelsäsongen startar den 1 april och slutar i slutet av oktober."
 }

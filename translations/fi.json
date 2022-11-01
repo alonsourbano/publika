@@ -36,5 +36,6 @@
   "STOP_MOVED": "Pysäkki siirretty",
   "NO_EFFECT": "Ei vaikutusta",
   "BIKE_STATION_AVAILABILITY": "Pyöriä asemalla juuri nyt",
-  "OFF_SEASON": "Tervetuloa kaupunkipyöräilijäksi taas keväällä!"
+  "OFF_SEASON": "Tervetuloa kaupunkipyöräilijäksi taas keväällä!",
+  "OFF_SEASON_DESC": "Kaupunkipyörät ovat käytössä huhtikuun alusta lokakuun loppuun asti."
 }

@@ -36,5 +36,6 @@
   "STOP_MOVED": "Stop moved",
   "NO_EFFECT": "No effect",
   "BIKE_STATION_AVAILABILITY": "Bikes available at the station right now",
-  "OFF_SEASON": "Welcome to use the city bikes again in the spring!"
+  "OFF_SEASON": "Welcome to use the city bikes again in the spring!",
+  "OFF_SEASON_DESC": "City bikes are available from the beginning of April until the end of October."
 }
