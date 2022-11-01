@@ -70,3 +70,8 @@
 .publika-color .realtime:not(.cancelled-trip) .time {
   color: #46850e;
 }
+
+.publika-color #notifications .notification {
+  background-color: #f2b62d;
+  color: #000;
+}
