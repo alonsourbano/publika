@@ -174,7 +174,7 @@ Module.register("publika", {
           if (stop.search) {
             return {
               notification: NOTIFICATION.SEARCH_STOP.FETCH,
-              payload: { id: stop.id }
+              payload: { id: stop.id, search: stop.search }
             };
           }
           const { id, stopTimesCount, type, minutesFrom } = stop;
