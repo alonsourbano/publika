@@ -104,8 +104,8 @@ All cities:
 
 ### Recommended positions:
 
-| Position | supported |
-| --- | --- |
+| Position | Supported |
+| --- | :---: |
 | top_bar | :x: |
 | top_left | :white_check_mark: |
 | top_center | :white_check_mark: |
