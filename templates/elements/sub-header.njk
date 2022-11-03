@@ -1,16 +1,25 @@
 {% if context.locationType %}
-  <tr class="stop-subheader">
+  <tr class="stop-subheader" data-source="{{context | dump if config.debug else "prod"}}">
     <td colspan="{{defaults.colspan-1}}">
       {% if context.locationType === "STOP" %}
-        <span>{{context.desc}}</span>
-        <span class="stop-code">{{context.code}}</span>
+        {% if context.desc %}
+          <span>{{context.desc}}</span>
+        {% endif %}
+        <span class="stop-code">
+          {% if context.code %}
+            {{context.code}}
+          {% else %}
+            {% set gtfsId = context
+              .gtfsId
+              .split(":") | last %}
+            {{gtfsId | truncate(20) if gtfsId.length > 20 else gtfsId}}
+          {% endif %}
+        </span>
         {% if context.platformCode %}
           <span>{{maps.platformNames.get(context.vehicleMode)}}</span>
           <span class="stop-platform">{{context.platformCode}}</span>
         {% endif %}
-        <span class="stop-zone">
-          <i class="fa-solid fa-{{context.zoneId | lower}}"></i>
-        </span>
+        {% include "templates/elements/zone.njk" %}
       {% elif context.locationType === "BIKE_STATION" %}
         <span>{{context.locationType | translate}}</span>
         {% if context.id | int %}
@@ -18,9 +27,7 @@
         {% endif %}
       {% else %}
         <span class="stop-code">{{context.locationType | translate}}</span>
-        <span class="stop-zone">
-          <i class="fa-solid fa-{{context.zoneId | lower}}"></i>
-        </span>
+        {% include "templates/elements/zone.njk" %}
       {% endif %}
     </td>
     {% if context.minutesFrom %}
