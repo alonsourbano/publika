@@ -2,9 +2,9 @@
 const moment = require("moment");
 const fetch = require("node-fetch");
 const NodeHelper = require("node_helper");
-const getHSLStopTimesQuery = require("./HSL-graphiql/stop-times");
-const getHSLStopSearchQuery = require("./HSL-graphiql/stop-search");
-const getHSLBikeStationQuery = require("./HSL-graphiql/bike-station");
+const getStopTimesQuery = require("./graphiql/stop-times");
+const getHSLStopSearchQuery = require("./graphiql/stop-search");
+const getHSLBikeStationQuery = require("./graphiql/bike-station");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
@@ -18,12 +18,20 @@ const processStopTimeData = (json) =>
     time: moment((stoptime.serviceDay + stoptime.realtimeDeparture) * 1000),
     realtime: stoptime.realtime,
     cancelled: stoptime.realtimeState === "CANCELED",
+    pickup:
+      stoptime.pickupType === "SCHEDULED" ||
+      stoptime.pickupType === "" ||
+      stoptime.pickupType === undefined,
     stop: stoptime.stop,
     trip: {
       gtfsId: stoptime.trip.gtfsId,
+      tripHeadsign: stoptime.trip.tripHeadsign,
       route: {
         gtfsId: stoptime.trip.route.gtfsId,
-        type: stoptime.trip.route.type
+        type: stoptime.trip.route.type,
+        color: stoptime.trip.route.color,
+        textColor: stoptime.trip.route.textColor,
+        longName: stoptime.trip.route.longName
       },
       stoptimes: stoptime.trip.stoptimes
         .filter((item) => item.scheduledDeparture > stoptime.scheduledDeparture)
@@ -42,46 +50,90 @@ module.exports = NodeHelper.create({
     core: undefined,
     instances: []
   },
+  urls: {
+    HSL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
+    default:
+      "https://api.digitransit.fi/routing/v1/routers/waltti/index/graphql"
+  },
 
   socketNotificationReceived: function (notification, payload) {
-    const [instance, type] = notification.split("::");
+    const [instanceId, type] = notification.split("::");
 
     if (type === "CORE_INIT") {
-      Log.log(instance, type);
-      this.initData = { ...this.initData, ...payload, core: instance };
+      Log.log(instanceId, type);
+      this.initData = { ...this.initData, ...payload, core: instanceId };
       return;
     }
 
-    if (this.initData?.debug) {
-      Log.log(instance, type, payload);
+    const instance = this.initData?.instances.find(
+      (item) => item.id === instanceId
+    );
+
+    if (instance?.debug) {
+      Log.log(instanceId, type, payload);
     }
 
     if (type === "INIT") {
-      if (!this.initData?.instances.includes(instance)) {
-        this.initData.instances.push(instance);
+      if (instance === undefined) {
+        this.initData.instances.push({
+          id: instanceId,
+          debug: payload.debug,
+          feed: payload.feed
+        });
+      } else {
+        const index = this.initData?.instances.findIndex(
+          (item) => item.id === instanceId
+        );
+        this.initData.instances[index] = {
+          id: instanceId,
+          debug: payload.debug,
+          feed: payload.feed
+        };
       }
-      return this.sendInstanceSocketNotification(instance, "READY", undefined);
+      return this.sendInstanceSocketNotification(
+        instanceId,
+        "READY",
+        undefined
+      );
     }
 
     if (type === "WAKE_UP") {
       if (this.initData?.instances?.length) {
         return this.initData.instances.forEach((item) =>
-          this.sendInstanceSocketNotification(item, "AWAKE", undefined)
+          this.sendInstanceSocketNotification(item.id, "AWAKE", undefined)
         );
       }
-      return this.sendInstanceSocketNotification(instance, "AWAKE", undefined);
+      return this.sendInstanceSocketNotification(
+        instanceId,
+        "AWAKE",
+        undefined
+      );
     }
+
+    const url = instance?.feed === "HSL" ? this.urls.HSL : this.urls.default;
 
     if (type === "FETCH_BATCH") {
       return payload.forEach((item) => {
         if (item.notification === "SEARCH_STOP") {
-          return this.fetchSearchStop(instance, item.payload);
+          return this.fetchSearchStop(
+            instance ?? instanceId,
+            url,
+            item.payload
+          );
         }
         if (item.notification === "FETCH_STOP_STOPTIMES") {
-          return this.fetchStopStoptimes(instance, item.payload);
+          return this.fetchStopStoptimes(
+            instance ?? instanceId,
+            url,
+            item.payload
+          );
         }
         if (item.notification === "FETCH_BIKE_STATION") {
-          return this.fetchBikeStation(instance, item.payload);
+          return this.fetchBikeStation(
+            instance ?? instanceId,
+            url,
+            item.payload
+          );
         }
         Log.warn(
           `Unhandled socket notification ${item.notification}`,
@@ -91,19 +143,19 @@ module.exports = NodeHelper.create({
     }
 
     if (type === "FETCH_BIKE_STATION") {
-      return this.fetchBikeStation(instance, payload);
+      return this.fetchBikeStation(instance ?? instanceId, url, payload);
     }
 
     if (type === "FETCH_STOP_STOPTIMES") {
-      return this.fetchStopStoptimes(instance, payload);
+      return this.fetchStopStoptimes(instance ?? instanceId, url, payload);
     }
 
     if (type === "SEARCH_STOP") {
-      return this.fetchSearchStop(instance, payload);
+      return this.fetchSearchStop(instance ?? instanceId, url, payload);
     }
 
     if (["NOTIFICATION", "API_KEY_NOTIFICATION"].includes(type)) {
-      return this.sendInstanceSocketNotification(instance, type, {
+      return this.sendInstanceSocketNotification(instance ?? instanceId, type, {
         id: uuidv4(),
         ...payload
       });
@@ -113,30 +165,52 @@ module.exports = NodeHelper.create({
   },
 
   sendInstanceSocketNotification: function (instance, notification, payload) {
-    this.sendSocketNotification(`${instance}::${notification}`, payload);
+    this.sendSocketNotification(
+      `${instance?.id ?? instance}::${notification}`,
+      payload
+    );
   },
 
-  fetchStopStoptimes: function (instance, payload) {
+  fetchStopStoptimes: function (instance, url, payload) {
     this.getStopSchedule(
+      url,
+      instance.feed,
       payload,
       (data) => this.resolve(instance, "RESOLVE_STOP_STOPTIMES", data),
       (error) => this.reject(error, instance, "REJECT_STOP_STOPTIMES", payload)
     );
   },
 
-  fetchBikeStation: function (instance, payload) {
+  fetchBikeStation: function (instance, url, payload) {
     this.getBikeStation(
+      url,
       payload,
-      (data) => this.resolve(instance, "RESOLVE_BIKE_STATION", data),
-      (error) => this.reject(error, instance, "REJECT_BIKE_STATION", payload)
+      (data) =>
+        this.resolve(instance?.id ?? instance, "RESOLVE_BIKE_STATION", data),
+      (error) =>
+        this.reject(
+          error,
+          instance?.id ?? instance,
+          "REJECT_BIKE_STATION",
+          payload
+        )
     );
   },
 
-  fetchSearchStop: function (instance, payload) {
+  fetchSearchStop: function (instance, url, payload) {
     this.getStopSearch(
+      url,
+      instance.feed,
       payload,
-      (data) => this.resolve(instance, "RESOLVE_SEARCH_STOP", data),
-      (error) => this.reject(error, instance, "REJECT_SEARCH_STOP", payload)
+      (data) =>
+        this.resolve(instance?.id ?? instance, "RESOLVE_SEARCH_STOP", data),
+      (error) =>
+        this.reject(
+          error,
+          instance?.id ?? instance,
+          "REJECT_SEARCH_STOP",
+          payload
+        )
     );
   },
 
@@ -172,9 +246,9 @@ module.exports = NodeHelper.create({
     };
   },
 
-  getStopSearch: function (stop, resolve, reject) {
+  getStopSearch: function (url, feed, stop, resolve, reject) {
     try {
-      fetch(this.initData.digiTransit.apiUrl, {
+      fetch(url, {
         method: "POST",
         body: getHSLStopSearchQuery(stop.id),
         headers: this.getHeaders()
@@ -187,7 +261,9 @@ module.exports = NodeHelper.create({
               ...stop,
               data: {
                 responseType: "STOP_SEARCH",
-                stops: json.data.stops
+                stops: json.data.stops.filter((item) =>
+                  item.gtfsId.startsWith(`${feed}:`)
+                )
               }
             });
           }
@@ -199,11 +275,12 @@ module.exports = NodeHelper.create({
     }
   },
 
-  getStopSchedule: function (stop, resolve, reject) {
+  getStopSchedule: function (url, feed, stop, resolve, reject) {
     try {
-      fetch(this.initData.digiTransit.apiUrl, {
+      fetch(url, {
         method: "POST",
-        body: getHSLStopTimesQuery(
+        body: getStopTimesQuery(
+          feed ?? "HSL",
           stop.type ?? "stop",
           stop.id,
           stop.stopTimesCount,
@@ -273,9 +350,9 @@ module.exports = NodeHelper.create({
     }
   },
 
-  getBikeStation: function (stop, resolve, reject) {
+  getBikeStation: function (url, stop, resolve, reject) {
     try {
-      fetch(this.initData.digiTransit.apiUrl, {
+      fetch(url, {
         method: "POST",
         body: getHSLBikeStationQuery(stop.id),
         headers: this.getHeaders()

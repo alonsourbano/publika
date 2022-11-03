@@ -2,7 +2,7 @@
 {% if stoptime.stop.vehicleMode === "BUS" and stoptime.trip.route.type === 702 %}
   {% set vehicleType = "bus-express" %}
 {% endif %}
-<tr class="vehicle-{{vehicleType | lower}} {{functions.getStoptimeStyles(stop, stoptime)}}">
+<tr class="vehicle-{{vehicleType | lower}} {{functions.getStoptimeStyles(stop, stoptime)}}" data-source="{{stoptime | dump if config.debug else "prod"}}">
   {% if stoptime.cancelled %}
     <td class="route-line">
       <div>
@@ -11,11 +11,20 @@
     </td>
   {% else %}
     <td class="route-line route-line-icon">
-      <div>
-        {% for item in stoptime.line | lower | list %}
-          <i class="{{"first" if loop.first}} {{"last" if loop.last}} fa-regular fa-{{item}}"></i>
-        {% endfor %}
-      </div>
+      {% set routeShortName %}
+      {% for item in stoptime.line | lower | list %}
+        <i class="{{"first" if loop.first}} {{"last" if loop.last}} fa-regular fa-{{item}}"></i>
+      {% endfor %}
+      {% endset %}
+      {% if stoptime.trip.route.color %}
+        {% if stoptime.trip.route.color === "000000" %}
+          <div style="background-color: #ffffff; color: #000000">{{routeShortName | safe}}</div>
+        {% else %}
+          <div style="background-color: #{{stoptime.trip.route.color}}">{{routeShortName | safe}}</div>
+        {% endif %}
+      {% else %}
+        <div>{{routeShortName | safe}}</div>
+      {% endif %}
     </td>
   {% endif %}
   <td>
@@ -23,7 +32,12 @@
     {% for headsignAlert in headsignAlerts %}
       <i class="alert alert-{{headsignAlert | lower}} {{maps.alertSeverityLevels.get(headsignAlert)}}"></i>
     {% endfor %}
-    {{functions.getHeadsignText(stop, stoptime)}}
+    {% if not stoptime.pickup %}
+      <i class="fa-solid fa-hand"></i>
+      {{"NO_PICKUP" | translate}}
+    {% else %}
+      {{functions.getHeadsignText(stop, stoptime)}}
+    {% endif %}
   </td>
   <td class="time smaller">
     {% if stoptime.cancelled %}

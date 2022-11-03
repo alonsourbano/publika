@@ -1,25 +1,25 @@
 # Publika
 
-HSL (Helsinki region, Finland) public transport schedule times module for MirrorMirror project
+Finland's public transport schedule times module for MirrorMirror project
 
 ![Module](docs/fgayavtw.png)
 
 ## What it does
 
-The `publika` module shows public transport timetables from HSL (Helsinki region, Finland)
+The `publika` module shows public transport timetables from Finland's cities
 
 ## Functionalities
 
 - Can display several stops and/or stations based on configuration
 - Displays stop code, platform/track and ticket zones
 - Supports english, finnish and swedish
+- Support multiple cities: Helsinki, Tampere, Turku among others. Check below to see [the full list](#supported-feeds).
 - Displays times in realtime when available
-  - If not, displays the scheduled departure using the `~` symbol, like HSL does. 
 - Displays cancelled trips
 - Amount of stops to display can be configured for all stops or individually
 - Displays disruptions (alerts) for services and stops/stations using different icons depending on severity
 - Blinks when service departure time is less than one minute
-- **New** Can also display city bike stations
+- Can also display city bike stations
 - Can display one stop or the whole station
   - For example, one train station has at least two stops, aka tracks. Some bus stations has several platforms
 - Can set a delay start to a stop
@@ -43,7 +43,7 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 - Search stop and station IDs from the module:
 
-![Search stop and station IDs from the module](docs/ybdasief.png)
+![Search stop and station IDs from the module](docs/bafjjgpn.png)
 
 - Supports english, finnish and swedish:
 
@@ -77,6 +77,14 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 
 ![The module can be loaded multiple times](docs/cwpizvko.png)
 
+- Stop with no pickups:
+
+![Stop with no pickups](docs/pkllwwiu.png)
+
+All cities:
+
+![All cities](docs/aguffsox.png)
+
 ## Getting started
 
 1) Clone this repository under `MagicMirror/modules` folder
@@ -87,11 +95,35 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
   module: "publika",
   position: "top_right",
   config: {
+    feed: "HSL",
     stops: [1020453],
     stopTimesCount: 5,
   }
 }
 ```
+
+### Supported feeds:
+
+The following feeds are supported:
+
+| Region | Name | Code | Documentation |
+| --- | --- | --- | --- |
+| Helsinki | HSL | HSL | [HSL](docs/HSL/README.md) |
+| Hämeenlinna | Hämeenlinna | Hameenlinna | [Hameenlinna](docs/Hameenlinna/README.md) |
+| Joensuu | JOJO | Joensuu | [Joensuu](docs/Joensuu/README.md) |
+| Jyväskylä | Linkki | LINKKI | [Jyväskylä](docs/LINKKI/README.md) |
+| Kajaani | Kajaani | Kajaani | [Kajaani](docs/Kajaani/README.md) |
+| Kotka | Jonne & Minne | Kotka | [Kotka](docs/Kotka/README.md) |
+| Kouvola | Koutsi | Kouvola | [Kouvola](docs/Kouvola/README.md) |
+| Kuopio | Vilkku | Kuopio | [Kuopio](docs/Kuopio/README.md) |
+| Lahti | Lahti | Lahti | [Lahti](docs/Lahti/README.md) |
+| Lappeenranta | Jouko | Lappeenranta | [Lappeenranta](docs/Lappeenranta/README.md) |
+| Mikkeli | Mikkeli | Mikkeli | [Mikkeli](docs/Mikkeli/README.md) |
+| Tampere | Nysse | tampere | [tampere](docs/tampere/README.md) |
+| Oulu | Oulu | OULU | [OULU](docs/OULU/README.md) |
+| Rovaniemi | Linkkari | Rovaniemi | [Rovaniemi](docs/Rovaniemi/README.md) |
+| Turku | Föli | FOLI | [FOLI](docs/FOLI/README.md) |
+| Vaasa | Vaasa | Vaasa | [Vaasa](docs/Vaasa/README.md) |
 
 ### Configuration options
 
@@ -100,19 +132,21 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | Option | Required | Type | Default | Description | Example |
 | --- | --- | --- | --- | --- | --- |
 | core | Required only when loading the module multiple times | `boolean` | `undefined` | When loading the module multiple times, one and only one instance has to be set up as core | `true` |
-| hslApiKey | no | `string` | `undefined` | API key for use of HSL DigiTransit API. It will be required starting from april 3rd, 2023. **Important**: If the module is loaded multiple times, this field has to be in the same instance that is set as core | `"abc123def456ghi789"` |
+| feed | no | `string` | `"HSL"` | Specify the feed to use. Check [the feed list](#supported-feeds) | `"tampere"` |
+| digiTransitApiKey | no | `string` | `undefined` | API key for use of DigiTransit API. It will be required starting from april 3rd, 2023. **Important**: If the module is loaded multiple times, this field has to be in the same instance that is set as core | `"abc123def456ghi789"` |
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
 | fullHeadsign | no | `boolean` | `false` | Show complete headsign for all stops. For example: Töölön halli via Kallio | `true` |
 | headsignViaTo | no | `boolean` | `false` | Show headsign in the form via-destination for all stops. For example: Kallio - Töölön halli. Requires `fullHeadsign` to be `true` | `true` |
-| theme | no | `string` | `color` | Color scheme to show. Default is `color` which uses HSL color schemas. Option `mono` uses black and white | `mono` |
+| theme | no | `string` | `"color"` | Color scheme to show. Default is `color` which uses feed color schemas. Option `mono` uses black and white | `mono` |
 | stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]` |
 
 `stops` can be an array of string, number, `StopObject` or a mix of them:
 ```js
 {
   config: {
+    feed: "HSL",
     stops: [
-      { id: "H0082", search: "stop" },
+      { id: "Tove Jansson", search: "stop" },
       1020453,
       { id: 1000105, type: "station" },
       { id: 218, type: "bikeStation" },
@@ -130,8 +164,8 @@ The `publika` module shows public transport timetables from HSL (Helsinki region
 | --- | --- | --- | --- | --- | --- |
 | id | yes | `number` | `undefined` | ID of the stop, station, or city bike station | `1020453` |
 | name | no | `string` | `undefined` | Name to display on the stop title, next to the stop name | `"To city center"` |
-| type | no | `string` | `stop` | Only needed when using station (`"station"`) or bike station (`"bikeStation"`), otherwise assumed to be a stop | `"station"` |
-| search | no | `string` | `stop` | Type of search to perform. At this moment only stop search is supported | `"stop"` |
+| type | no | `string` | `"stop"` | Only needed when using station (`"station"`) or bike station (`"bikeStation"`), otherwise assumed to be a stop | `"station"` |
+| search | no | `string` | `"stop"` | Type of search to perform. At this moment only stop search is supported | `"stop"` |
 | minutesFrom | no | `number` | `undefined` | Only fetch services starting this amount of minutes from now | `3` |
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |

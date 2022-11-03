@@ -1,0 +1,11 @@
+{% if context.zoneId %}
+  <span class="stop-zone">
+    {% if context.zoneId.length > 1 %}
+      {{context.zoneId}}
+    {% elif context.zoneId | int %}
+      <i class="fa-solid fa-{{context.zoneId | letterize}}"></i>
+    {% else %}
+      <i class="fa-solid fa-{{context.zoneId | lower}}"></i>
+    {% endif %}
+  </span>
+{% endif %}

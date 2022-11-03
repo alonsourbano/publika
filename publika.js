@@ -36,32 +36,22 @@ const NOTIFICATION = {
 
 Module.register("publika", {
   defaults: {
+    feed: "HSL",
     stops: [],
     stopTimesCount: 5,
     theme: "color",
     fullHeadsign: false,
     headsignViaTo: false,
-    hslApiKey: undefined
+    digiTransitApiKey: undefined,
+    debug: false
   },
 
-  digitransitApiUrl:
-    "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
   timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a",
   instances: [],
   apiKeyDeadLine: undefined,
-  debug: config.logLevel.includes("DEBUG"),
   updateAgeLimitSeconds: 60,
 
   notificationReceived: function (notification, payload, sender) {
-    if (sender?.name === "clock") {
-      return;
-    }
-    if (sender?.name === "publika") {
-      return;
-    }
-    if (this.debug) {
-      Log.log(notification, payload);
-    }
     if (notification === "ALL_MODULES_STARTED") {
       return this.onAllModulesStarted();
     }
@@ -69,6 +59,12 @@ Module.register("publika", {
       return;
     }
     if (notification === "MODULE_DOM_CREATED") {
+      return;
+    }
+    if (sender?.name === "clock") {
+      return;
+    }
+    if (sender?.name === "publika") {
       return;
     }
 
@@ -279,11 +275,11 @@ Module.register("publika", {
       return;
     }
 
-    if (this.debug) {
+    const instance = this.getInstance();
+
+    if (instance.config.debug) {
       Log.log(notification, payload);
     }
-
-    const instance = this.getInstance();
 
     if (
       this.checkSocketNotification(
@@ -384,7 +380,7 @@ Module.register("publika", {
             moment.duration(time.diff(moment())).asMinutes()
           );
           if (previousRemainingTime !== stoptime.remainingTime) {
-            if (this.debug) {
+            if (instance.config.debug) {
               Log.log(
                 `${this.name}::${this.identifier
                 }::watchRemainingTime updated remaining time for service ${stoptime.line
@@ -417,8 +413,8 @@ Module.register("publika", {
           moment.duration(moment().diff(stop.updateTime)).asSeconds()
         );
         if (stop.updateAge > this.updateAgeLimitSeconds) {
-          if (this.debug) {
-            Log.warn(
+          if (instance.config.debug) {
+            Log.log(
               `${this.name}::${this.identifier
               }::watchUpdateStatus updated age for stop ${stop.meta.name ?? stop.id
               }`
@@ -506,6 +502,15 @@ Module.register("publika", {
             id: stop.id ?? stop,
             stoptimes: { empty: true }
           }))
+      }))
+      .map((instance) => ({
+        ...instance,
+        config: {
+          ...instance.config,
+          stops: instance.config.stops.map((stop) =>
+            stop.id ? stop : { id: stop }
+          )
+        }
       }));
     const instance = this.getInstance();
     if (!this.isBikeSeason()) {
@@ -527,12 +532,12 @@ Module.register("publika", {
     if (
       instance.core &&
       instance.id === this.identifier &&
-      !instance.config.hslApiKey
+      !instance.config.digiTransitApiKey
     ) {
       this.apiKeyDeadLine = moment("20230403", "YYYYMMDD");
       const deadLined = moment().isSameOrAfter(this.apiKeyDeadLine);
       const hslNotification = {
-        title: `Module ${this.name} (HSL timetables)`,
+        title: `Module ${this.name}`,
         type: deadLined ? undefined : "notification",
         message: `Starting from ${this.apiKeyDeadLine.format(
           "LL"
@@ -558,17 +563,18 @@ Module.register("publika", {
 
   sendInitNotification: function (instance) {
     this.sendCoreInitNotification(instance);
-    this.sendInstanceSocketNotification(NOTIFICATION.READY.INIT, undefined);
+    this.sendInstanceSocketNotification(NOTIFICATION.READY.INIT, {
+      debug: instance.config.debug,
+      feed: instance.config.feed
+    });
   },
 
   sendCoreInitNotification: function (instance) {
     if (instance.core && instance.id === this.identifier) {
       this.sendInstanceSocketNotification(NOTIFICATION.READY.CORE_INIT, {
         digiTransit: {
-          subscriptionKey: instance.config.hslApiKey,
-          apiUrl: this.digitransitApiUrl
-        },
-        debug: this.debug
+          subscriptionKey: instance.config.digiTransitApiKey
+        }
       });
     }
   },
@@ -581,7 +587,7 @@ Module.register("publika", {
     const instance = this.getInstance();
     const notification = {
       type: "notification",
-      title: `Module ${this.name} (HSL timetables)`,
+      title: `Module ${this.name}`,
       message,
       timer: seconds * 1000
     };
@@ -625,7 +631,7 @@ Module.register("publika", {
     instance.stops[index].bikeRentalStation = bikeRentalStation;
     instance.stops[index].updateTime = moment();
     instance.stops[index].updateAge = 0;
-    if (instance.stops[index].config.eta) {
+    if (instance.stops[index].config?.eta) {
       if (
         instance.stops[index].config.type === "stop" ||
         instance.stops[index].config.type === undefined
@@ -745,7 +751,11 @@ Module.register("publika", {
     return [
       "default/normal",
       {
-        config: { debug: this.debug, theme: config.theme },
+        config: {
+          debug: config.debug,
+          feed: config.feed,
+          theme: config.theme
+        },
         data: {
           notifications,
           stops
@@ -776,7 +786,11 @@ Module.register("publika", {
                 []
               ),
           getHeadsignText: (stop, stoptime) => {
-            if (!stoptime.headsign) {
+            if (
+              !stoptime.headsign &&
+              !stoptime.trip.tripHeadsign &&
+              !stoptime.trip.route.longName
+            ) {
               return "";
             }
             const fullHeadsign =
@@ -787,12 +801,37 @@ Module.register("publika", {
               typeof stop.headsignViaTo === "undefined"
                 ? config.headsignViaTo
                 : stop.headsignViaTo;
-            const [to, via] = stoptime.headsign.split(" via ");
-            return fullHeadsign && via
-              ? headsignViaTo
-                ? `${via} - ${to}`
-                : `${to} via ${via}`
-              : to;
+            const headsign =
+              stoptime.headsign ||
+              stoptime.trip.tripHeadsign ||
+              stoptime.trip.route.longName ||
+              "";
+            const [to, via] = (
+              headsign.startsWith(`${stoptime.line} `)
+                ? headsign.slice(`${stoptime.line} `.length)
+                : headsign
+            )
+              .trim()
+              .split(" via ");
+            if (via && fullHeadsign && headsignViaTo) {
+              return `${via} - ${to}`;
+            }
+            if (via && fullHeadsign) {
+              return `${to} via ${via}`;
+            }
+            if (fullHeadsign) {
+              return to;
+            }
+            if (to.length > 20 && to.includes("-")) {
+              const tos = to.split("-");
+              const a = tos.at(0).trim();
+              const b = tos.at(-1).trim();
+              if (a === b) {
+                return a;
+              }
+              return `${a} - ${b}`;
+            }
+            return to;
           },
           getStopAlerts: (stop) =>
             stop.alerts
@@ -812,7 +851,11 @@ Module.register("publika", {
                   effect: this.translate(alert.alertEffect),
                   startTime: alert.startTime,
                   endTime: alert.endTime,
-                  text: this.getAlertTranslation(alert, "alertHeaderText")
+                  text: this.getAlertTranslation(alert, "alertHeaderText"),
+                  description: this.getAlertTranslation(
+                    alert,
+                    "alertDescriptionText"
+                  )
                 }))
                 .reduce(
                   (p, c) =>
@@ -844,7 +887,7 @@ Module.register("publika", {
             ["UNKNOWN_SEVERITY", "fa-solid fa-circle-question"],
             ["INFO", "fa-solid fa-circle-info"],
             ["WARNING", "fa-solid fa-triangle-exclamation"],
-            ["SEVERE", "fa-solid fa-radiation"]
+            ["SEVERE", "fa-solid fa-triangle-exclamation"]
           ]),
           platformNames: new Map([
             ["AIRPLANE", this.translate("PLATFORM")],
@@ -906,6 +949,9 @@ Module.register("publika", {
           ? input.reduce((p, c) => ({ ...p, ...c }), {})
           : { ...input }
       )
+    );
+    this._nunjucksEnvironment.addFilter("letterize", (input) =>
+      nunjucks.runtime.markSafe(String.fromCharCode(96 + parseInt(input)))
     );
     this._nunjucksEnvironment.addFilter("moment", (input) =>
       nunjucks.runtime.markSafe(moment(input).format(this.timeFormat))

@@ -1,5 +1,5 @@
 {% if functions.validateStopRules(stop) %}
-  <tr class="stop-header bright" data-source="{{stop | dump if config.debug else "prod"}}">
+  <tr class="stop-header bright">
     {% if stop.meta %}
       <th colspan="{{defaults.colspan+1}}">
         <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
@@ -9,16 +9,16 @@
           {% if stop.destination %}
             {{stop.destination}}
           {% else %}
-            HSL:{{stop.eta}}
+            {{config.feed}}:{{stop.eta}}
           {% endif %}
         {% endif %}
       </th>
     {% else %}
       <th colspan="{{defaults.colspan}}">
-        HSL:{{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
+        {{config.feed}}:{{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
         {% if stop.eta %}
           <i class="fa-solid fa-arrow-right-long"></i>
-          HSL:{{stop.eta}}
+          {{config.feed}}:{{stop.eta}}
         {% endif %}
       </th>
     {% endif %}
@@ -64,7 +64,7 @@
   {% endfor %}
   {% set agedStyle = functions.getAgedStyle(stop) %}
   {% for stopAlert in functions.getStopAlerts(stop) %}
-    <tr class="{{agedStyle}}">
+    <tr class="{{agedStyle}}" data-source="{{stopAlert | dump if config.debug else "prod"}}">
       <td class="alert alert-full alert-{{stopAlert.alertSeverityLevel | lower}}" colspan="{{defaults.colspan}}">
         <i class="{{maps.alertSeverityLevels.get(stopAlert.icon)}}"></i>
         {{stopAlert.text}}

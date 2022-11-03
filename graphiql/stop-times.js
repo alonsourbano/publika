@@ -1,8 +1,7 @@
 const alerts = require("./alerts");
 
-module.exports = (type, stop, count, startTime) => {
-  return `{
-    ${type}(id: "HSL:${stop}") {
+module.exports = (feed, type, stop, count, startTime) => `{
+    ${type}(id: "${feed}:${stop}") {
       gtfsId
       name
       code
@@ -11,19 +10,21 @@ module.exports = (type, stop, count, startTime) => {
       vehicleMode
       platformCode
       locationType
-      stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: true, omitCanceled: false) {
+      stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: false, omitCanceled: false) {
         realtimeDeparture
         scheduledDeparture
         realtime
         realtimeState
         serviceDay
         headsign
+        pickupType
         stop {
           platformCode
           vehicleMode
         }
         trip {
           gtfsId
+          tripHeadsign
           routeShortName
           stoptimes {
             scheduledDeparture
@@ -37,6 +38,9 @@ module.exports = (type, stop, count, startTime) => {
           route {
             gtfsId
             type
+            color
+            textColor
+            longName
             ${alerts}
           }
           ${alerts}
@@ -54,4 +58,3 @@ module.exports = (type, stop, count, startTime) => {
       ${alerts}
     }
   }`;
-};

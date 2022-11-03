@@ -8,19 +8,21 @@
     vehicleMode
     platformCode
     locationType
-    stoptimesWithoutPatterns(numberOfDepartures: 3, omitNonPickups: true, omitCanceled: false) {
+    stoptimesWithoutPatterns(numberOfDepartures: 3, omitNonPickups: false, omitCanceled: false) {
       realtimeDeparture
       scheduledDeparture
       realtime
       realtimeState
       serviceDay
       headsign
+      pickupType
       stop {
         platformCode
         vehicleMode
       }
       trip {
         gtfsId
+        tripHeadsign
         routeShortName
         stoptimes {
           scheduledDeparture
@@ -34,6 +36,9 @@
         route {
           gtfsId
           type
+          color
+          textColor
+          longName
           alerts {
             alertHash
             id
