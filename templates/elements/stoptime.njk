@@ -47,7 +47,7 @@
       {% if not stoptime.realtime and config.theme === "mono" %}
         {% set scheduledTimeIcon = "~" %}
       {% endif %}
-      {% if stoptime.remainingTime > 20 %}
+      {% if stoptime.remainingTime > 10 %}
       {% elif stoptime.remainingTime === 0 %}
         {{scheduledTimeIcon}}{{"NOW" | translate}}
       {% elif stoptime.remainingTime > 0 %}
