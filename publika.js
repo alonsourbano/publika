@@ -379,7 +379,10 @@ Module.register("publika", {
           stoptime.remainingTime = Math.round(
             moment.duration(time.diff(moment())).asMinutes()
           );
-          if (previousRemainingTime !== stoptime.remainingTime) {
+          if (
+            previousRemainingTime !== stoptime.remainingTime &&
+            stoptime.remainingTime <= 10
+          ) {
             if (instance.config.debug) {
               Log.log(
                 `${this.name}::${this.identifier
