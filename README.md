@@ -102,6 +102,24 @@ All cities:
 }
 ```
 
+### Recommended positions:
+
+| Position | supported |
+| --- | --- |
+| top_bar | :x: |
+| top_left | :white_check_mark: |
+| top_center | :white_check_mark: |
+| top_right | :white_check_mark: |
+| upper_third | :x: |
+| middle_center | :x: |
+| lower_third | :x: |
+| bottom_left | :x: |
+| bottom_center | :white_check_mark: |
+| bottom_right | :white_check_mark: |
+| bottom_bar | :x: |
+| fullscreen_above | :x: |
+| fullscreen_below | :x: |
+
 ### Supported feeds:
 
 The following feeds are supported:
