@@ -1,6 +1,6 @@
 {
   "name": "publika",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "HSL (Helsinki region, Finland) public transport schedule times module for MirrorMirror project",
   "main": "publika.js",
   "scripts": {
