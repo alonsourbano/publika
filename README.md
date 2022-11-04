@@ -104,21 +104,21 @@ All cities:
 
 ### Recommended positions:
 
-| Position | Supported |
-| --- | :---: |
-| top_bar | :x: |
-| top_left | :white_check_mark: |
-| top_center | :white_check_mark: |
-| top_right | :white_check_mark: |
-| upper_third | :x: |
-| middle_center | :x: |
-| lower_third | :x: |
-| bottom_left | :x: |
-| bottom_center | :white_check_mark: |
-| bottom_right | :white_check_mark: |
-| bottom_bar | :x: |
-| fullscreen_above | :x: |
-| fullscreen_below | :x: |
+| Position | Supported | Type |
+| --- | :---: | --- |
+| top_bar | :white_check_mark: | Bar |
+| top_left | :white_check_mark: | Normal |
+| top_center | :white_check_mark: | Normal |
+| top_right | :white_check_mark: | Normal |
+| upper_third | :white_check_mark: | Bar |
+| middle_center | :white_check_mark: | Bar |
+| lower_third | :white_check_mark: | Bar |
+| bottom_left | :white_check_mark: | Normal |
+| bottom_center | :white_check_mark: | Normal |
+| bottom_right | :white_check_mark: | Normal |
+| bottom_bar | :white_check_mark: | Bar |
+| fullscreen_above | :white_check_mark: | Bar |
+| fullscreen_below | :white_check_mark: | Bar |
 
 ### Supported feeds:
 

@@ -1,6 +1,11 @@
+.publika-base.bar {
+  overflow: hidden;
+}
+
 .publika-base #stoptimes {
   text-align: left;
   white-space: nowrap;
+  width: unset;
 }
 
 .publika-base .stop-subheader td {
@@ -20,12 +25,18 @@
   margin-bottom: 10px;
 }
 
-.publika-base #notifications .notification {
+.publika-base td.notification {
   border: 1px solid;
   border-radius: 5px;
   padding: 10px;
   max-width: 1px;
   text-align: left;
+  font-size: 80%;
+}
+
+.publika-base table.bar td.notification {
+  max-width: unset;
+  padding: 0 10px;
 }
 
 .publika-base #notifications .notification-div {
@@ -120,6 +131,32 @@
 
 .publika-base .eta {
   font-size: 70%;
+}
+
+.publika-base table.bar th {
+  padding-right: 50px;
+}
+
+.publika-base table.bar td.last {
+  padding-right: 50px;
+}
+
+.publika-base table .headsign {
+  padding-right: 20px;
+}
+
+.publika-base table.bar span:not(:first-child) {
+  font-size: 70%;
+  margin-left: 5px;
+}
+
+.publika-base .no-pickup {
+  font-size: 80%;
+  font-style: italic;
+}
+
+.publika-base .no-pickup i {
+  font-size: 100%;
 }
 
 @keyframes blinker {

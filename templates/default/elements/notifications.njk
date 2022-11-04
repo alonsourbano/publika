@@ -1,8 +1,11 @@
 {% if data.notifications.length %}
   <table id="notifications">
     {% for notification in data.notifications %}
+      {% if loop.first %}
+        {{functions.setPrintedTime(notification)}}
+      {% endif %}
       <tr>
-        <td class="notification" colspan="{{defaults.colspan}}">
+        <td class="notification {{"now" if notification.blink}}" colspan="{{defaults.colspan}}">
           {{notification.message}}
         </td>
       </tr>

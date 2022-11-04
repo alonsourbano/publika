@@ -1,22 +1,24 @@
 <div class="light small publika-base publika-{{config.theme}} publika-{{config.feed | lower}}">
-  {% include "templates/elements/notifications.njk" %}
+  {% include "templates/default/elements/notifications.njk" %}
   <table id="stoptimes">
     <tbody>
       {% for stop in data.stops %}
-        {% if stop.search === "stop" %}
-          {% include "templates/elements/stop-search.njk" %}
-        {% elif stop.type === "bikeStation" %}
-          {% if functions.isBikeSeason() %}
-            {% include "templates/elements/bike-station.njk" %}
+        {% if functions.validateStopRules(stop) %}
+          {% if stop.search === "stop" %}
+            {% include "templates/default/elements/stop-search.njk" %}
+          {% elif stop.type === "bikeStation" %}
+            {% if functions.isBikeSeason() %}
+              {% include "templates/default/elements/bike-station.njk" %}
+            {% else %}
+              {% include "templates/default/elements/bike-station-off.njk" %}
+            {% endif %}
           {% else %}
-            {% include "templates/elements/bike-station-off.njk" %}
+            {% include "templates/default/elements/stop-stoptimes.njk" %}
           {% endif %}
-        {% else %}
-          {% include "templates/elements/stop-stoptimes.njk" %}
+          <tr>
+            <td data-context="default.normal">&nbsp;</td>
+          </tr>
         {% endif %}
-        <tr>
-          <td data-context="default.normal">&nbsp;</td>
-        </tr>
       {% endfor %}
     </tbody>
   </table>

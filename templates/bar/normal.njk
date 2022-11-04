@@ -1,0 +1,13 @@
+<div class="light small publika-base publika-{{config.theme}} publika-{{config.feed | lower}} bar">
+  <table id="stoptimes" class="bar">
+    <tbody>
+      {% for stop in data.stops %}
+        {% if loop
+          .first and functions
+          .validateStopRules(stop) %}
+          {% include "templates/bar/elements/stop-stoptimes.njk" %}
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
