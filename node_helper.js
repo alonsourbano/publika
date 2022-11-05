@@ -13,9 +13,9 @@ const processStopTimeData = (json) =>
     line: stoptime.trip.routeShortName,
     headsign: stoptime.headsign,
     remainingTime: getRemainingTime(
-      moment((stoptime.serviceDay + stoptime.realtimeDeparture) * 1000)
+      moment.unix(stoptime.serviceDay + stoptime.realtimeDeparture)
     ),
-    time: moment((stoptime.serviceDay + stoptime.realtimeDeparture) * 1000),
+    time: moment.unix(stoptime.serviceDay + stoptime.realtimeDeparture),
     realtime: stoptime.realtime,
     cancelled: stoptime.realtimeState === "CANCELED",
     pickup:
@@ -37,7 +37,7 @@ const processStopTimeData = (json) =>
         .filter((item) => item.scheduledDeparture > stoptime.scheduledDeparture)
         .map((item) => ({
           ...item,
-          time: moment((stoptime.serviceDay + item.realtimeDeparture) * 1000)
+          time: moment.unix(stoptime.serviceDay + item.realtimeDeparture)
         }))
     }
   }));
@@ -154,7 +154,7 @@ module.exports = NodeHelper.create({
       return this.fetchSearchStop(instance ?? instanceId, url, payload);
     }
 
-    if (["NOTIFICATION", "API_KEY_NOTIFICATION"].includes(type)) {
+    if (type === "NOTIFICATION") {
       return this.sendInstanceSocketNotification(instance ?? instanceId, type, {
         id: uuidv4(),
         ...payload
@@ -284,7 +284,9 @@ module.exports = NodeHelper.create({
           stop.type ?? "stop",
           stop.id,
           stop.stopTimesCount,
-          moment().unix() + (stop.minutesFrom || 0) * 60
+          moment()
+            .add(stop.minutesFrom ?? 0, "minutes")
+            .unix()
         ),
         headers: this.getHeaders()
       })
@@ -335,8 +337,8 @@ module.exports = NodeHelper.create({
                   .reduce((p, c) => [...p, ...c], [])
               ]
                 .map((alert) => ({
-                  startTime: moment(alert.effectiveStartDate * 1000),
-                  endTime: moment(alert.effectiveEndDate * 1000),
+                  startTime: moment.unix(alert.effectiveStartDate),
+                  endTime: moment.unix(alert.effectiveEndDate),
                   ...alert
                 }))
                 .sort((a, b) => moment(a.endTime).diff(moment(b.endTime)))

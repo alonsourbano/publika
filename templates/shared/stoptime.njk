@@ -1,0 +1,91 @@
+{% set vehicleType = stoptime.stop.vehicleMode %}
+{% if stoptime.stop.vehicleMode === "BUS" and stoptime.trip.route.type === 702 %}
+  {% set vehicleType = "bus-express" %}
+{% endif %}
+{% set stoptimeStyles = ["vehicle-", vehicleType | lower, " ", functions.getStoptimeStyles(stop, stoptime)] | join %}
+{% if stoptime.cancelled %}
+  <td class="{{stoptimeStyles}} route-line">
+    <div>
+      {{stoptime.line}}
+    </div>
+  </td>
+{% else %}
+  <td class="{{stoptimeStyles}} route-line route-line-icon">
+    {% set routeShortName %}
+    {% for item in stoptime.line | lower | list %}
+      <i class="{{"first" if loop.first}} {{"last" if loop.last}} fa-regular fa-{{item}}"></i>
+    {% endfor %}
+    {% endset %}
+    {% if stoptime.trip.route.color and config.theme !== "mono" %}
+      {% if stoptime.trip.route.color === "000000" %}
+        <div style="background-color: #ffffff; color: #000000">{{routeShortName | safe}}</div>
+      {% else %}
+        <div style="background-color: #{{stoptime.trip.route.color}}">{{routeShortName | safe}}</div>
+      {% endif %}
+    {% else %}
+      <div>{{routeShortName | safe}}</div>
+    {% endif %}
+  </td>
+{% endif %}
+<td class="{{stoptimeStyles}} headsign {{"no-pickup" if not stoptime.pickup}}">
+  {% set headsignAlerts = functions.getHeadsignAlerts(stop, stoptime) %}
+  {% for alertSeverity in headsignAlerts %}
+    <i class="alert alert-{{alertSeverity | lower}} {{maps.alertSeverityLevels.get(alertSeverity)}}"></i>
+  {% endfor %}
+  {% if not stoptime.pickup %}
+    <i class="fa-solid fa-hand"></i>
+    {{"NO_PICKUP" | translate}}
+  {% else %}
+    {{functions.getHeadsignText(stop, stoptime)}}
+  {% endif %}
+</td>
+<td class="{{stoptimeStyles}} time smaller">
+  {% if stoptime.cancelled %}
+    <i class="fa-solid fa-xmark"></i>
+  {% else %}
+    {% set scheduledTimeIcon = "" %}
+    {% if not stoptime.realtime and config.theme === "mono" %}
+      {% set scheduledTimeIcon = "~" %}
+    {% endif %}
+    {% if stoptime.remainingTime > 10 %}
+    {% elif stoptime.remainingTime > 0 %}
+      {{scheduledTimeIcon}}{{stoptime.remainingTime}}
+      {{"MINUTES_ABBR" | translate}}
+    {% elif stoptime.remainingTime === 0 %}
+      {{scheduledTimeIcon}}{{"NOW" | translate}}
+    {% else %}
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    {% endif %}
+  {% endif %}
+</td>
+<td class="{{stoptimeStyles}} time">
+  {{stoptime.time | moment}}
+</td>
+{% set fullHeadsignAlerts = false %}
+{% if config.isBar %}
+  {% set fullHeadsignAlerts = functions.getHeadsignAlertsFull(stop, stoptime) %}
+{% endif %}
+{% if stoptime.eta.time %}
+  <td class="{{stoptimeStyles}} eta eta-{{"realtime" if stoptime.eta.realtime else "schedule"}} {{"last" if not fullHeadsignAlerts.length}}">
+    <i class="fa-solid fa-arrow-right-long"></i>
+    {{stoptime.eta.time | moment}}
+  </td>
+{% elif stop.stopsLength > 1 and stoptime.stop.platformCode %}
+  <td class="{{stoptimeStyles}} {{"last" if not fullHeadsignAlerts.length}}">
+    <span class="stop-platform smaller">{{stoptime.stop.platformCode}}</span>
+  </td>
+{% elif config.isBar %}
+  <td class="{{stoptimeStyles}} {{"last" if not fullHeadsignAlerts.length}}"></td>
+{% endif %}
+{% if config.isBar %}
+  {% if loop.first and data.notifications.length %}
+    {% include "templates/bar/elements/notifications.njk" %}
+  {% else %}
+    {% for alert in fullHeadsignAlerts %}
+      <td class="{{stoptimeStyles}} alert {{"last" if loop.last}}">
+        <i class="alert alert-{{alert.alertSeverityLevel | lower}} {{maps.alertSeverityLevels.get(alert.alertSeverityLevel)}}"></i>
+        {{alert.effect}}
+      </td>
+    {% endfor %}
+  {% endif %}
+{% endif %}

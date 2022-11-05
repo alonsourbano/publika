@@ -8,6 +8,7 @@
   "NOW": "Nyt",
   "SETUP_MODULE": "Aseta pysäkit tiedostossa config.js",
   "UPDATE_OLD": "Pysäkin tietoja ei ole päivitetty vähään aikaan",
+  "BAR_WRONG_TYPE": "Vain pysäkit tai asemat voidaan näyttää tässä asennossa",
   "CLUSTER": "Klusterit on poistettu käytöstä",
   "BIKE_STATION": "Kaupunkipyöräasema",
   "PIER": "Laituri",
@@ -39,5 +40,5 @@
   "ETA_NO_STOP": "Arvioitu saapumisaika on saatavilla vain pysäkeille",
   "BIKE_STATION_AVAILABILITY": "Pyöriä asemalla juuri nyt",
   "OFF_SEASON": "Tervetuloa kaupunkipyöräilijäksi taas keväällä!",
-  "OFF_SEASON_DESC": "Kaupunkipyörät ovat käytössä huhtikuun alusta lokakuun loppuun asti."
+  "OFF_SEASON_DESC": "Kaupunkipyörät ovat käytössä huhtikuun alusta lokakuun loppuun asti"
 }

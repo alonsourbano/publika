@@ -8,6 +8,7 @@
   "NOW": "Nu",
   "SETUP_MODULE": "Ställ in stoppen i config.js",
   "UPDATE_OLD": "Hållplatsdata har inte uppdaterats på ett tag",
+  "BAR_WRONG_TYPE": "Endast hållplatser eller stationer kan visas i denna position",
   "CLUSTER": "Kluster har fasats ut",
   "BIKE_STATION": "Stadscykelstation",
   "PIER": "Pir",
@@ -39,5 +40,5 @@
   "ETA_NO_STOP": "Beräknad ankomsttid är endast tillgänglig för stopp",
   "BIKE_STATION_AVAILABILITY": "Antal cyklar just nu",
   "OFF_SEASON": "Välkommen som användare av stadscyklar igen nästa vår!",
-  "OFF_SEASON_DESC": "Stadscykelsäsongen startar den 1 april och slutar i slutet av oktober."
+  "OFF_SEASON_DESC": "Stadscykelsäsongen startar den 1 april och slutar i slutet av oktober"
 }

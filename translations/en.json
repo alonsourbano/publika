@@ -8,6 +8,7 @@
   "NOW": "Now",
   "SETUP_MODULE": "Setup the stops in config.js",
   "UPDATE_OLD": "Stop data hasn't been updated in a while",
+  "BAR_WRONG_TYPE": "Only stops or stations can be displayed in this position",
   "CLUSTER": "Clusters have been deprecated",
   "BIKE_STATION": "Bike station",
   "PIER": "Pier",
@@ -39,5 +40,5 @@
   "ETA_NO_STOP": "ETA is only available for stops",
   "BIKE_STATION_AVAILABILITY": "Bikes available at the station right now",
   "OFF_SEASON": "Welcome to use the city bikes again in the spring!",
-  "OFF_SEASON_DESC": "City bikes are available from the beginning of April until the end of October."
+  "OFF_SEASON_DESC": "City bikes are available from the beginning of April until the end of October"
 }

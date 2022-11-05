@@ -1,0 +1,9 @@
+{% for notification in data.notifications %}
+  {% if loop.first %}
+    {{functions.setPrintedTime(notification)}}
+  {% endif %}
+  <td class="notification {{"now" if notification.blink}}">
+    {{notification.message}}
+  </td>
+  <td class="last"></td>
+{% endfor %}

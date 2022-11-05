@@ -2,7 +2,13 @@
 
 Finland's public transport schedule times module for MirrorMirror project
 
-![Module](docs/fgayavtw.png)
+- Normal view:
+
+![Normal view](docs/fgayavtw.png)
+
+- Bar view:
+
+![Bar view](docs/ycsvytfr.png)
 
 ## What it does
 
@@ -102,23 +108,41 @@ All cities:
 }
 ```
 
-### Recommended positions:
+### Positions:
 
-| Position | Supported |
-| --- | :---: |
-| top_bar | :x: |
-| top_left | :white_check_mark: |
-| top_center | :white_check_mark: |
-| top_right | :white_check_mark: |
-| upper_third | :x: |
-| middle_center | :x: |
-| lower_third | :x: |
-| bottom_left | :x: |
-| bottom_center | :white_check_mark: |
-| bottom_right | :white_check_mark: |
-| bottom_bar | :x: |
-| fullscreen_above | :x: |
-| fullscreen_below | :x: |
+| Position | Supported | Type |
+| --- | :---: | --- |
+| top_bar | :white_check_mark: | Bar |
+| top_left | :white_check_mark: | Normal |
+| top_center | :white_check_mark: | Normal |
+| top_right | :white_check_mark: | Normal |
+| upper_third | :white_check_mark: | Bar |
+| middle_center | :white_check_mark: | Bar |
+| lower_third | :white_check_mark: | Bar |
+| bottom_left | :white_check_mark: | Normal |
+| bottom_center | :white_check_mark: | Normal |
+| bottom_right | :white_check_mark: | Normal |
+| bottom_bar | :white_check_mark: | Bar |
+| fullscreen_above | :white_check_mark: | Bar |
+| fullscreen_below | :white_check_mark: | Bar |
+
+#### Position's screenshots:
+
+- Top left (normal view):
+
+![Top left](docs/viuhkpqj.png)
+
+- Top bar (bar view):
+
+![Top bar](docs/nkfyfysd.png)
+
+- Bottom bar (bar view):
+
+![Bottom bar](docs/cidtrzfs.png)
+
+- Fullscreen above/below (bar view):
+
+![Fullscreen above/below](docs/vtvmqwma.png)
 
 ### Supported feeds:
 

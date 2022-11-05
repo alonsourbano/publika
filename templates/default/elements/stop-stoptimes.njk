@@ -1,0 +1,62 @@
+<tr class="stop-header bright">
+  <th colspan="{{defaults.colspan+1}}">
+    {% if stop.meta %}
+      <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
+      {{stop.meta.name}}{{[" - ", stop.name] | join if stop.name}}
+      {% if stop.eta %}
+        <i class="fa-solid fa-arrow-right-long"></i>
+        {% if stop.destination %}
+          {{stop.destination}}
+        {% else %}
+          {{config.feed}}:{{stop.eta}}
+        {% endif %}
+      {% endif %}
+    {% else %}
+      {{config.feed}}:{{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
+      {% if stop.eta %}
+        <i class="fa-solid fa-arrow-right-long"></i>
+        {{config.feed}}:{{stop.eta}}
+      {% endif %}
+    {% endif %}
+  </th>
+</tr>
+{% set context = [
+  stop.meta, {
+    minutesFrom: stop.minutesFrom
+  }
+] | contextualize %}
+{% include "templates/default/elements/sub-header.njk" %}
+<tr>
+  <td colspan="{{defaults.colspan}}">
+    {% if stop.type === "cluster" %}
+      <i class="fa-solid fa-xmark"></i>
+      {{"CLUSTER" | translate}}
+    {% elif stop.stoptimes.error %}
+      <i class="fa-solid fa-xmark"></i>
+      {{"ERROR" | translate}}
+    {% elif stop.stoptimes.empty %}
+      <i class="fa-solid fa-spinner"></i>
+      {{"LOADING" | translate}}
+    {% endif %}
+  </td>
+</tr>
+{% if stop.updateAge === true %}
+  <tr>
+    <td colspan="{{defaults.colspan}}">
+      <i class="fa-solid fa-hourglass-end"></i>
+      {{"UPDATE_OLD" | translate}}
+    </td>
+  </tr>
+{% endif %}
+{% for stoptime in stop.stoptimes %}
+  {% include "templates/default/elements/stoptime.njk" %}
+{% endfor %}
+{% set agedStyle = functions.getAgedStyle(stop) %}
+{% for stopAlert in functions.getStopAlerts(stop) %}
+  <tr class="{{agedStyle}}" data-source="{{stopAlert | dump if config.debug else "prod"}}">
+    <td class="alert alert-full alert-{{stopAlert.alertSeverityLevel | lower}}" colspan="{{defaults.colspan}}">
+      <i class="{{maps.alertSeverityLevels.get(stopAlert.icon)}}"></i>
+      {{stopAlert.text}}
+    </td>
+  </tr>
+{% endfor %}

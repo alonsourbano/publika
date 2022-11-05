@@ -15,38 +15,38 @@
   border-radius: 4px;
 } */
 
-.publika-color :not(.cancelled-trip) .route-line div {
+.publika-color :not(.cancelled-trip).route-line div {
   border-radius: 3px;
   color: #fff;
   padding-top: 2px;
 }
 
-.publika-color :not(.cancelled-trip) .route-line div .first {
+.publika-color :not(.cancelled-trip).route-line div .first {
   padding-left: 20px;
 }
 
-.publika-color :not(.cancelled-trip) .route-line div .last {
+.publika-color :not(.cancelled-trip).route-line div .last {
   padding-right: 20px;
 }
 
-.publika-color .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #007ac9;
 }
 
-.publika-color .vehicle-bus-express:not(.cancelled-trip) .route-line div,
-.publika-color .vehicle-subway:not(.cancelled-trip) .route-line div {
+.publika-color .vehicle-bus-express:not(.cancelled-trip).route-line div,
+.publika-color .vehicle-subway:not(.cancelled-trip).route-line div {
   background-color: #ca4000;
 }
 
-.publika-color .vehicle-ferry:not(.cancelled-trip) .route-line div {
+.publika-color .vehicle-ferry:not(.cancelled-trip).route-line div {
   background-color: #007a97;
 }
 
-.publika-color .vehicle-rail:not(.cancelled-trip) .route-line div {
+.publika-color .vehicle-rail:not(.cancelled-trip).route-line div {
   background-color: #8c4799;
 }
 
-.publika-color .vehicle-tram:not(.cancelled-trip) .route-line div {
+.publika-color .vehicle-tram:not(.cancelled-trip).route-line div {
   background-color: #008151;
 }
 
@@ -67,7 +67,7 @@
   color: #dc0451;
 }
 
-.publika-color .realtime:not(.cancelled-trip) .time {
+.publika-color .realtime:not(.cancelled-trip).time {
   color: #46850e;
 }
 
@@ -88,7 +88,7 @@
   accent-color: #46850e;
 }
 
-.publika-color #notifications .notification {
+.publika-color td.notification {
   background-color: #f2b62d;
   color: #000;
 }
@@ -102,7 +102,7 @@
   border-color: #f76013;
 }
 
-.publika-color.publika-hameenlinna .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-hameenlinna .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #f76013;
 }
 
@@ -111,7 +111,7 @@
   border-color: #52b9e9;
 }
 
-.publika-color.publika-mikkeli .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-mikkeli .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #52b9e9;
 }
 
@@ -120,11 +120,11 @@
   border-color: #1c57cf;
 }
 
-.publika-color.publika-tampere .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-tampere .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #1a4a8f;
 }
 
-.publika-color.publika-tampere .vehicle-tram:not(.cancelled-trip) .route-line div {
+.publika-color.publika-tampere .vehicle-tram:not(.cancelled-trip).route-line div {
   background-color: #da2128;
 }
 
@@ -133,7 +133,7 @@
   border-color: #e8aa27;
 }
 
-.publika-color.publika-foli .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-foli .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #e8aa27;
 }
 
@@ -142,7 +142,7 @@
   border-color: #5c4696;
 }
 
-.publika-color.publika-joensuu .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-joensuu .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #009fe3;
 }
 
@@ -151,7 +151,7 @@
   border-color: #f16522;
 }
 
-.publika-color.publika-kajaani .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-kajaani .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #f16522;
 }
 
@@ -160,7 +160,7 @@
   border-color: #0001ff;
 }
 
-.publika-color.publika-kotka .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-kotka .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #0001ff;
 }
 
@@ -170,7 +170,7 @@
   color: #000;
 }
 
-.publika-color.publika-kouvola .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-kouvola .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #fff;
   color: #000;
 }
@@ -180,7 +180,7 @@
   border-color: #0ab1c8;
 }
 
-.publika-color.publika-kuopio .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-kuopio .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #724f9f;
 }
 
@@ -189,7 +189,7 @@
   border-color: #0066b3;
 }
 
-.publika-color.publika-lahti .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-lahti .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #0066b3;
 }
 
@@ -198,7 +198,7 @@
   border-color: #ea4097;
 }
 
-.publika-color.publika-lappeenranta .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-lappeenranta .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #ea4097;
 }
 
@@ -207,7 +207,7 @@
   border-color: #e10669;
 }
 
-.publika-color.publika-oulu .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-oulu .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #e10669;
 }
 
@@ -216,7 +216,7 @@
   border-color: #34b233;
 }
 
-.publika-color.publika-rovaniemi .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-rovaniemi .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #34b233;
 }
 
@@ -225,7 +225,7 @@
   border-color: #000a8c;
 }
 
-.publika-color.publika-vaasa .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-vaasa .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #000a8c;
 }
 
@@ -234,6 +234,6 @@
   border-color: #7dc02d;
 }
 
-.publika-color.publika-linkki .vehicle-bus:not(.cancelled-trip) .route-line div {
+.publika-color.publika-linkki .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #7dc02d;
 }

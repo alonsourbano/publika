@@ -1,0 +1,52 @@
+<tr>
+  <td class="last">
+    <span class="bright bold">
+      {% if stop.meta %}
+        <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
+        {{stop.meta.name}}{{[" - ", stop.name] | join if stop.name}}
+        {% if stop.eta %}
+          <i class="fa-solid fa-arrow-right-long"></i>
+          {% if stop.destination %}
+            {{stop.destination}}
+          {% else %}
+            {{config.feed}}:{{stop.eta}}
+          {% endif %}
+        {% endif %}
+      {% else %}
+        {{config.feed}}:{{stop.id | truncate(20) if stop.id.length > 20 else stop.id}}
+        {% if stop.eta %}
+          <i class="fa-solid fa-arrow-right-long"></i>
+          {{config.feed}}:{{stop.eta}}
+        {% endif %}
+      {% endif %}
+    </span>
+    {% set context = [stop.meta] | contextualize %}
+    {% include "templates/shared/sub-header.njk" %}
+  </td>
+  {% for stoptime in stop.stoptimes %}
+    {% include "templates/shared/stoptime.njk" %}
+  {% else %}
+    {% if data.notifications.length %}
+      {% include "templates/bar/elements/notifications.njk" %}
+    {% else %}
+      <td>
+        {% if stop.updateAge === true %}
+          <i class="fa-solid fa-hourglass-end"></i>
+          {{"UPDATE_OLD" | translate}}
+        {% elif stop.type === "cluster" %}
+          <i class="fa-solid fa-xmark"></i>
+          {{"CLUSTER" | translate}}
+        {% elif stop.stoptimes.error %}
+          <i class="fa-solid fa-xmark"></i>
+          {{"ERROR" | translate}}
+        {% elif stop.stoptimes.empty %}
+          <i class="fa-solid fa-spinner"></i>
+          {{"LOADING" | translate}}
+        {% else %}
+          <i class="fa-solid fa-spinner"></i>
+          {{"NO_DATA" | translate}}
+        {% endif %}
+      </td>
+    {% endif %}
+  {% endfor %}
+</tr>

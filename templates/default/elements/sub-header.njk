@@ -1,0 +1,13 @@
+{% if context.locationType %}
+  <tr class="stop-subheader" data-source="{{context | dump if config.debug else "prod"}}">
+    <td colspan="{{defaults.colspan-1}}">
+      {% include "templates/shared/sub-header.njk" %}
+    </td>
+    {% if context.minutesFrom %}
+      <td class="minutes-from">
+        {{["+", context.minutesFrom | string] | join if context.minutesFrom > 0 else context.minutesFrom}}{{"MINUTES_ABBR"
+    | translate}}
+      </td>
+    {% endif %}
+  </tr>
+{% endif %}

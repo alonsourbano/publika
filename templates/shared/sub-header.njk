@@ -1,0 +1,30 @@
+{% if context.locationType %}
+  {% if context.locationType === "STOP" %}
+    {% if context.desc %}
+      <span>{{context.desc}}</span>
+    {% endif %}
+    <span class="stop-code">
+      {% if context.code %}
+        {{context.code}}
+      {% else %}
+        {% set gtfsId = context
+          .gtfsId
+          .split(":") | last %}
+        {{gtfsId | truncate(20) if gtfsId.length > 20 else gtfsId}}
+      {% endif %}
+    </span>
+    {% if context.platformCode %}
+      <span>{{maps.platformNames.get(context.vehicleMode)}}</span>
+      <span class="stop-platform">{{context.platformCode}}</span>
+    {% endif %}
+    {% include "templates/default/elements/zone.njk" %}
+  {% elif context.locationType === "BIKE_STATION" %}
+    <span>{{context.locationType | translate}}</span>
+    {% if context.id | int %}
+      <span class="stop-code">{{context.id}}</span>
+    {% endif %}
+  {% else %}
+    <span class="stop-code">{{context.locationType | translate}}</span>
+    {% include "templates/default/elements/zone.njk" %}
+  {% endif %}
+{% endif %}
