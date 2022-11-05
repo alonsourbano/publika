@@ -12,10 +12,8 @@ const processStopTimeData = (json) =>
   json.stoptimesWithoutPatterns.map((stoptime) => ({
     line: stoptime.trip.routeShortName,
     headsign: stoptime.headsign,
-    remainingTime: moment.duration(
-      moment
-        .unix(stoptime.serviceDay + stoptime.realtimeDeparture)
-        .diff(moment())
+    remainingTime: getRemainingTime(
+      moment.unix(stoptime.serviceDay + stoptime.realtimeDeparture)
     ),
     time: moment.unix(stoptime.serviceDay + stoptime.realtimeDeparture),
     realtime: stoptime.realtime,
@@ -43,6 +41,9 @@ const processStopTimeData = (json) =>
         }))
     }
   }));
+
+const getRemainingTime = (time) =>
+  Math.round(moment.duration(time.diff(moment())).asMinutes());
 
 module.exports = NodeHelper.create({
   initData: {

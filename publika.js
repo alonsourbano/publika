@@ -49,7 +49,7 @@ Module.register("publika", {
   timeFormat: config.timeFormat === 24 ? "HH:mm" : "h:mm a",
   instances: [],
   apiKeyDeadLine: undefined,
-  updateAgeLimit: undefined,
+  updateAgeLimitSeconds: 60,
 
   notificationReceived: function (notification, payload, sender) {
     if (notification === "ALL_MODULES_STARTED") {
@@ -69,10 +69,6 @@ Module.register("publika", {
     }
 
     Log.warn(`Unhandled notification ${notification}`, payload, sender);
-  },
-
-  start: function () {
-    this.updateAgeLimit = moment.duration(60, "seconds");
   },
 
   processStopStoptimesNotification: function (instance, notification, payload) {
@@ -356,7 +352,7 @@ Module.register("publika", {
       );
       return;
     }
-    var requiresUpdate = false;
+    var requiresDomUpdate = false;
     instance.stops.forEach((stop) => {
       if (!Array.isArray(stop.stoptimes)) {
         return;
@@ -366,27 +362,28 @@ Module.register("publika", {
         .forEach((stoptime) => {
           const time = moment(stoptime.time);
           const previousRemainingTime = stoptime.remainingTime;
-          stoptime.remainingTime = this.asMinutes(
-            moment.duration(time.diff(moment()))
+          stoptime.remainingTime = Math.round(
+            moment.duration(time.diff(moment())).asMinutes()
           );
           if (
             previousRemainingTime !== stoptime.remainingTime &&
-            stoptime.remainingTime <= moment.duration(10, "minutes").asMinutes()
+            stoptime.remainingTime <= 10
           ) {
             if (instance.config.debug) {
               Log.log(
                 `${this.name}::${this.identifier
-                }::watchRemainingTime updated remaining time for service ${stoptime.line
-                } departing from ${stop.meta.name} at ${time.format(
-                  this.timeFormat
-                )}`
+                }::watchRemainingTime updated remaining time to ${stoptime.remainingTime
+                } for service ${stoptime.line} departing from ${stop.meta.name
+                } at ${time.format(this.timeFormat)}`
               );
             }
-            requiresUpdate = true;
+            requiresDomUpdate = true;
           }
         });
     });
-    if (requiresUpdate) {
+    Log.warn("Checkinf if requires DOM update...");
+    if (requiresDomUpdate) {
+      Log.warn("Updating DOM");
       this.updateDom();
     }
   },
@@ -405,8 +402,10 @@ Module.register("publika", {
     instance.stops
       .filter((stop) => stop.updateAge !== true)
       .forEach((stop) => {
-        stop.updateAge = moment().diff(stop.updateTime, "seconds");
-        if (stop.updateAge > this.updateAgeLimit) {
+        stop.updateAge = Math.round(
+          moment.duration(moment().diff(stop.updateTime)).asSeconds()
+        );
+        if (stop.updateAge > this.updateAgeLimitSeconds) {
           if (instance.config.debug) {
             Log.log(
               `${this.name}::${this.identifier
@@ -568,10 +567,6 @@ Module.register("publika", {
     }
   },
 
-  asMinutes: function (duration) {
-    return Math.round(duration.asMinutes());
-  },
-
   getInstance: function () {
     return this.instances.find((instance) => instance.id === this.identifier);
   },
@@ -641,10 +636,7 @@ Module.register("publika", {
       stopTimes,
       ...meta
     } = data;
-    instance.stops[index].stoptimes = stopTimes.map((stoptime) => ({
-      ...stoptime,
-      remainingTime: this.asMinutes(moment.duration(stoptime.remainingTime))
-    }));
+    instance.stops[index].stoptimes = stopTimes;
     instance.stops[index].config = instance.config.stops[configIndex];
     instance.stops[index].stopsLength = stopsLength;
     instance.stops[index].meta = meta;
@@ -1035,7 +1027,9 @@ Module.register("publika", {
   },
 
   getTemplateData() {
-    return this.getTemplateObject().at(1);
+    const data = this.getTemplateObject().at(1);
+    Log.warn(data);
+    return data;
   },
 
   nunjucksEnvironment: function () {

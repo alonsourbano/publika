@@ -48,11 +48,11 @@
       {% set scheduledTimeIcon = "~" %}
     {% endif %}
     {% if stoptime.remainingTime > 10 %}
-    {% elif stoptime.remainingTime === 0 %}
-      {{scheduledTimeIcon}}{{"NOW" | translate}}
     {% elif stoptime.remainingTime > 0 %}
       {{scheduledTimeIcon}}{{stoptime.remainingTime}}
       {{"MINUTES_ABBR" | translate}}
+    {% elif stoptime.remainingTime === 0 %}
+      {{scheduledTimeIcon}}{{"NOW" | translate}}
     {% else %}
       <i class="fa-solid fa-clock-rotate-left"></i>
     {% endif %}
