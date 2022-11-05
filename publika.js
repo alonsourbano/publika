@@ -55,20 +55,6 @@ Module.register("publika", {
     if (notification === "ALL_MODULES_STARTED") {
       return this.onAllModulesStarted();
     }
-    if (notification === "DOM_OBJECTS_CREATED") {
-      return;
-    }
-    if (notification === "MODULE_DOM_CREATED") {
-      return;
-    }
-    if (sender?.name === "clock") {
-      return;
-    }
-    if (sender?.name === "publika") {
-      return;
-    }
-
-    Log.warn(`Unhandled notification ${notification}`, payload, sender);
   },
 
   processStopStoptimesNotification: function (instance, notification, payload) {
@@ -381,9 +367,7 @@ Module.register("publika", {
           }
         });
     });
-    Log.warn("Checkinf if requires DOM update...");
     if (requiresDomUpdate) {
-      Log.warn("Updating DOM");
       this.updateDom();
     }
   },
