@@ -128,9 +128,9 @@ All cities:
 
 #### Position's screenshots:
 
-- Top right (normal view):
+- Top left (normal view):
 
-![Top right](docs/viuhkpqj.png)
+![Top left](docs/viuhkpqj.png)
 
 - Top bar (bar view):
 
@@ -142,7 +142,7 @@ All cities:
 
 - Fullscreen above/below (bar view):
 
-![Bottom bar](docs/vtvmqwma.png)
+![Fullscreen above/below](docs/vtvmqwma.png)
 
 ### Supported feeds:
 
