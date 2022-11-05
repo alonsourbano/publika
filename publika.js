@@ -1027,9 +1027,7 @@ Module.register("publika", {
   },
 
   getTemplateData() {
-    const data = this.getTemplateObject().at(1);
-    Log.warn(data);
-    return data;
+    return this.getTemplateObject().at(1);
   },
 
   nunjucksEnvironment: function () {
