@@ -2,7 +2,13 @@
 
 Finland's public transport schedule times module for MirrorMirror project
 
-![Module](docs/fgayavtw.png)
+- Normal view:
+
+![Normal view](docs/fgayavtw.png)
+
+- Bar view:
+
+![Bar view](docs/ycsvytfr.png)
 
 ## What it does
 
@@ -102,7 +108,7 @@ All cities:
 }
 ```
 
-### Recommended positions:
+### Positions:
 
 | Position | Supported | Type |
 | --- | :---: | --- |
@@ -119,6 +125,24 @@ All cities:
 | bottom_bar | :white_check_mark: | Bar |
 | fullscreen_above | :white_check_mark: | Bar |
 | fullscreen_below | :white_check_mark: | Bar |
+
+#### Position's screenshots:
+
+- Top right (normal view):
+
+![Top right](docs/viuhkpqj.png)
+
+- Top bar (bar view):
+
+![Top bar](docs/nkfyfysd.png)
+
+- Bottom bar (bar view):
+
+![Bottom bar](docs/cidtrzfs.png)
+
+- Fullscreen above/below (bar view):
+
+![Bottom bar](docs/vtvmqwma.png)
 
 ### Supported feeds:
 
