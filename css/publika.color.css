@@ -241,3 +241,9 @@
 .publika-color.publika-digitraffic .vehicle-rail:not(.cancelled-trip).route-line div {
   background-color: #00a149;
 }
+
+
+.publika-color .no-pickup.time,
+.publika-color .no-pickup.realtime.time {
+  color: #f2b62d;
+}

@@ -36,11 +36,6 @@
     <i class="fa-solid fa-hand"></i>
   {% endif %}
   {{functions.getHeadsignText(stop, stoptime)}}
-  {% if not stoptime.pickup %}
-    <span class="no-pickup">
-      ({{"NO_PICKUP" | translate}})
-    </span>
-  {% endif %}
 </td>
 <td class="{{stoptimeStyles}} time smaller">
   {% if stoptime.cancelled %}

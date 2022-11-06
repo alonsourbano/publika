@@ -155,15 +155,6 @@
   margin-left: 5px;
 }
 
-.publika-base .no-pickup {
-  font-size: 80%;
-  font-style: italic;
-}
-
-.publika-base .no-pickup i {
-  font-size: 100%;
-}
-
 @keyframes blinker {
   50% {
     opacity: 0;

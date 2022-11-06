@@ -958,6 +958,9 @@ Module.register("publika", {
             if (stoptime.realtime) {
               styles.push("realtime");
             }
+            if (!stoptime.pickup) {
+              styles.push("no-pickup");
+            }
             if (agedStyle) {
               styles.push(agedStyle);
             }
