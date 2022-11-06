@@ -474,7 +474,7 @@ Module.register("publika", {
         backgroundTasks: {
           notificationWatcher: undefined,
           remainingTimeWatcher: undefined,
-          socketWatcher: undefined,
+          socketWatcher: true, // Disabled for now
           updateStatusWatcher: undefined
         },
         config: { ...this.defaults, ...module.config },
@@ -871,6 +871,16 @@ Module.register("publika", {
               typeof stop.fullHeadsign === "undefined"
                 ? config.fullHeadsign
                 : stop.fullHeadsign;
+            if (fullHeadsign && config.feed === "digitraffic") {
+              var [vrFrom, vrTo] = stoptime.trip.route.longName.split(" - ");
+              if (vrFrom.endsWith("asema")) {
+                vrFrom = vrFrom.slice(0, -1 * "asema".length);
+              }
+              if (vrTo.endsWith("asema")) {
+                vrTo = vrTo.slice(0, -1 * "asema".length);
+              }
+              return `${vrFrom.trim()} - ${vrTo.trim()}`;
+            }
             const headsignViaTo =
               typeof stop.headsignViaTo === "undefined"
                 ? config.headsignViaTo

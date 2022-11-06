@@ -1,5 +1,8 @@
 <tr class="stop-header bright">
   <th colspan="{{defaults.colspan+1}}">
+    {% if config.feed === "digitraffic" and config.theme !== "mono" %}
+      <img src="/publika/images/vr-logo.svg">
+    {% endif %}
     {% if stop.meta %}
       <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
       {{stop.meta.name}}{{[" - ", stop.name] | join if stop.name}}
