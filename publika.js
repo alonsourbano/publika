@@ -42,6 +42,7 @@ Module.register("publika", {
     theme: "color",
     fullHeadsign: false,
     headsignViaTo: false,
+    omitNonPickups: false,
     digiTransitApiKey: undefined,
     debug: false
   },
@@ -155,13 +156,18 @@ Module.register("publika", {
             this.notify(this.translate("OFF_SEASON_DESC"));
             return undefined;
           }
+          const omitNonPickups =
+            typeof stop.omitNonPickups === "undefined"
+              ? instance.config.omitNonPickups
+              : stop.omitNonPickups;
           return {
             notification: NOTIFICATION.STOP_STOPTIMES.FETCH,
             payload: {
               id: id ?? stop,
               stopTimesCount: stopTimesCount ?? instance.config.stopTimesCount,
               type,
-              minutesFrom
+              minutesFrom,
+              omitNonPickups
             }
           };
         })
