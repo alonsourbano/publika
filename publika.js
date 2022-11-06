@@ -867,12 +867,11 @@ Module.register("publika", {
             ) {
               return "";
             }
-            const instance = this.getInstance();
             const fullHeadsign =
               typeof stop.fullHeadsign === "undefined"
                 ? config.fullHeadsign
                 : stop.fullHeadsign;
-            if (fullHeadsign && instance.config.feed === "digitraffic") {
+            if (fullHeadsign && config.feed === "digitraffic") {
               var [vrFrom, vrTo] = stoptime.trip.route.longName.split(" - ");
               if (vrFrom.endsWith("asema")) {
                 vrFrom = vrFrom.slice(0, -1 * "asema".length);
