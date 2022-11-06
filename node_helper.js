@@ -294,7 +294,8 @@ module.exports = NodeHelper.create({
             : stop.stopTimesCount,
           moment()
             .add(stop.minutesFrom ?? 0, "minutes")
-            .unix()
+            .unix(),
+          stop.omitNonPickups
         ),
         headers: this.getHeaders()
       })

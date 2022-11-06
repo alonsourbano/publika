@@ -188,6 +188,7 @@ The following feeds are supported:
 | stopTimesCount | no | `number` | `5` | Amount of stops for all stops | `3` |
 | fullHeadsign | no | `boolean` | `false` | Show complete headsign for all stops. For example: Töölön halli via Kallio | `true` |
 | headsignViaTo | no | `boolean` | `false` | Show headsign in the form via-destination for all stops. For example: Kallio - Töölön halli. Requires `fullHeadsign` to be `true` | `true` |
+| omitNonPickups | no | `boolean` | `false` | Omits services that cannot be boarder for all stops. For example train I from the airport to Helsinki cannot be boarded in Helsinki | `true` |
 | theme | no | `string` | `"color"` | Color scheme to show. Default is `color` which uses feed color schemas. Option `mono` uses black and white | `mono` |
 | stops | yes | `array<string \|  number \| StopObject>` | `undefined` | List of stops to display in the module | `[1020453]` |
 
@@ -221,6 +222,7 @@ The following feeds are supported:
 | stopTimesCount | no | `number` | Same as parent `stopTimesCount` if set, otherwise `5` | Amount of stops for this particular stop | `7` |
 | fullHeadsign | no | `boolean` | Same as parent `fullHeadsign` if set, otherwise `false` | Show complete headsign for this particular stop. For example: Lentoasema via Myyrmäki | `true` |
 | headsignViaTo | no | `boolean` | Same as parent `headsignViaTo` if set, otherwise `false` | Show headsign in the form via-destination for this particular stop. For example: Myyrmäki - Lentoasema. Requires `fullHeadsign` to be `true` | `true` |
+| omitNonPickups | no | `boolean` | Same as parent `omitNonPickups` if set, otherwise `false` | Omits services that cannot be boarder for this particular stop. For example subway to Tapiola cannot be boarded in Tapiola | `true` |
 | rules | no | `array<StopRule>` | `undefined` | Set of rules for showing this stop/station | See below |
 | eta | no | `number` | `undefined` | Estimated time of arrival to this stop. It has to be a stop and it has to be in the same direction. | `4610551` |
 | disabled | no | `boolean` | `false` | If set to `true`, the module will not show nor fetch this stop | `false` |

@@ -1,6 +1,6 @@
 const alerts = require("./alerts");
 
-module.exports = (feed, type, stop, count, startTime) => `{
+module.exports = (feed, type, stop, count, startTime, omitNonPickups) => `{
     ${type}(id: "${feed}:${stop}") {
       gtfsId
       name
@@ -10,7 +10,7 @@ module.exports = (feed, type, stop, count, startTime) => `{
       vehicleMode
       platformCode
       locationType
-      stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: false, omitCanceled: false) {
+      stoptimesWithoutPatterns(numberOfDepartures: ${count}, startTime: ${startTime}, omitNonPickups: ${!!omitNonPickups}, omitCanceled: false) {
         realtimeDeparture
         scheduledDeparture
         realtime
