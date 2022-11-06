@@ -19,7 +19,8 @@ The `publika` module shows public transport timetables from Finland's cities
 - Can display several stops and/or stations based on configuration
 - Displays stop code, platform/track and ticket zones
 - Supports english, finnish and swedish
-- Support multiple cities: Helsinki, Tampere, Turku among others. Check below to see [the full list](#supported-feeds).
+- Supports multiple cities: Helsinki, Tampere, Turku among others. Check below to see [the full list](#supported-feeds)
+- Supports VR schedules for long distance trains
 - Displays times in realtime when available
 - Displays cancelled trips
 - Amount of stops to display can be configured for all stops or individually
@@ -147,6 +148,14 @@ All cities:
 ### Supported feeds:
 
 The following feeds are supported:
+
+#### National feeds
+
+| Agency | Type | Code | Documentation |
+| --- | --- | --- | --- |
+| VR | Trains | digitraffic | [digitraffic](docs/digitraffic/README.md) |
+
+#### Regional feeds:
 
 | Region | Name | Code | Documentation |
 | --- | --- | --- | --- |

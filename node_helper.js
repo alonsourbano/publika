@@ -8,8 +8,8 @@ const getHSLBikeStationQuery = require("./graphiql/bike-station");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
-const processStopTimeData = (json) =>
-  json.stoptimesWithoutPatterns.map((stoptime) => ({
+const processStopTimeData = (stoptimesWithoutPatterns) =>
+  stoptimesWithoutPatterns.map((stoptime) => ({
     line: stoptime.trip.routeShortName,
     headsign: stoptime.headsign,
     remainingTime: getRemainingTime(
@@ -52,6 +52,7 @@ module.exports = NodeHelper.create({
   },
   urls: {
     HSL: "https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql",
+    VR: "https://api.digitransit.fi/routing/v1/routers/finland/index/graphql",
     default:
       "https://api.digitransit.fi/routing/v1/routers/waltti/index/graphql"
   },
@@ -110,7 +111,12 @@ module.exports = NodeHelper.create({
       );
     }
 
-    const url = instance?.feed === "HSL" ? this.urls.HSL : this.urls.default;
+    const url =
+      instance?.feed === "HSL"
+        ? this.urls.HSL
+        : instance?.feed === "digitraffic"
+          ? this.urls.VR
+          : this.urls.default;
 
     if (type === "FETCH_BATCH") {
       return payload.forEach((item) => {
@@ -283,7 +289,9 @@ module.exports = NodeHelper.create({
           feed ?? "HSL",
           stop.type ?? "stop",
           stop.id,
-          stop.stopTimesCount,
+          feed === "digitraffic"
+            ? stop.stopTimesCount * 100
+            : stop.stopTimesCount,
           moment()
             .add(stop.minutesFrom ?? 0, "minutes")
             .unix()
@@ -313,7 +321,18 @@ module.exports = NodeHelper.create({
               zoneId: data.zoneId,
               locationType: data.locationType,
               stopsLength: data.stops.length,
-              stopTimes: processStopTimeData(data),
+              stopTimes: processStopTimeData(
+                data.stoptimesWithoutPatterns
+                  .filter((stoptime) =>
+                    feed === "digitraffic"
+                      ? stoptime.trip?.route?.type !== 109
+                      : true
+                  )
+                  .slice(
+                    0,
+                    feed === "digitraffic" ? stop.stopTimesCount : undefined
+                  )
+              ),
               alerts: [
                 ...data.alerts,
                 ...data.routes

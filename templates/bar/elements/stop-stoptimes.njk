@@ -1,6 +1,9 @@
 <tr>
   <td class="last">
     <span class="bright bold">
+      {% if config.feed === "digitraffic" and config.theme !== "mono" %}
+        <img src="/publika/images/vr-logo.svg">
+      {% endif %}
       {% if stop.meta %}
         <i class="{{maps.vehicleModes.get(stop.meta.vehicleMode)}}"></i>
         {{stop.meta.name}}{{[" - ", stop.name] | join if stop.name}}
@@ -20,7 +23,7 @@
         {% endif %}
       {% endif %}
     </span>
-    {% set context = [stop.meta] | contextualize %}
+    {% set context = stop.meta | contextualize %}
     {% include "templates/shared/sub-header.njk" %}
   </td>
   {% for stoptime in stop.stoptimes %}

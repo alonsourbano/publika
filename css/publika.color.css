@@ -237,3 +237,7 @@
 .publika-color.publika-linkki .vehicle-bus:not(.cancelled-trip).route-line div {
   background-color: #7dc02d;
 }
+
+.publika-color.publika-digitraffic .vehicle-rail:not(.cancelled-trip).route-line div {
+  background-color: #00a149;
+}

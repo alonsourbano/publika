@@ -27,16 +27,19 @@
     {% endif %}
   </td>
 {% endif %}
-<td class="{{stoptimeStyles}} headsign {{"no-pickup" if not stoptime.pickup}}">
+<td class="{{stoptimeStyles}} headsign">
   {% set headsignAlerts = functions.getHeadsignAlerts(stop, stoptime) %}
   {% for alertSeverity in headsignAlerts %}
     <i class="alert alert-{{alertSeverity | lower}} {{maps.alertSeverityLevels.get(alertSeverity)}}"></i>
   {% endfor %}
   {% if not stoptime.pickup %}
     <i class="fa-solid fa-hand"></i>
-    {{"NO_PICKUP" | translate}}
-  {% else %}
-    {{functions.getHeadsignText(stop, stoptime)}}
+  {% endif %}
+  {{functions.getHeadsignText(stop, stoptime)}}
+  {% if not stoptime.pickup %}
+    <span class="no-pickup">
+      ({{"NO_PICKUP" | translate}})
+    </span>
   {% endif %}
 </td>
 <td class="{{stoptimeStyles}} time smaller">

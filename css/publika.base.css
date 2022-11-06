@@ -65,6 +65,11 @@
   padding: 1px 2px;
 }
 
+.publika-base.publika-digitraffic .stop-header img,
+.publika-base.publika-digitraffic.bar .bright.bold img {
+  height: 15px;
+}
+
 .publika-base table .route-line {
   text-align: center;
 }
