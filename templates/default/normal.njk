@@ -4,7 +4,7 @@
     <tbody>
       {% for stop in data.stops %}
         {% if functions.validateStopRules(stop) %}
-          {% if stop.search === "stop" %}
+          {% if stop.search %}
             {% include "templates/default/elements/stop-search.njk" %}
           {% elif stop.type === "bikeStation" %}
             {% if functions.isBikeSeason() %}
@@ -12,6 +12,8 @@
             {% else %}
               {% include "templates/default/elements/bike-station-off.njk" %}
             {% endif %}
+          {% elif stop.type === "plan" %}
+            {% include "templates/default/elements/plan.njk" %}
           {% else %}
             {% include "templates/default/elements/stop-stoptimes.njk" %}
           {% endif %}

@@ -1,0 +1,117 @@
+<tr>
+  <td colspan="{{defaults.colspan+1}}">
+    <div class="table">
+      <div class="table-body">
+        <div class="table-row">
+          <div class="table-head bold bright">
+            {% if config.feed === "digitraffic" and config.theme !== "mono" %}
+              <img src="/publika/images/vr-logo.svg">
+            {% endif %}
+            {{stop.stations.from.name if stop.stations.from.name else stop.from}}
+            <i class="fa-solid fa-arrow-right-long"></i>
+            {{stop.stations.to.name if stop.stations.to.name else stop.to}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% for itinerary in stop.plan.itineraries %}
+      {% set context = {
+        walkDistance: itinerary.walkDistance,
+        duration: itinerary.duration,
+        startTime: itinerary.startTime,
+        endTime: itinerary.endTime,
+        waitingTime: itinerary.waitingTime,
+        walkTime: itinerary.walkTime
+      } %}
+      <div class="table">
+        <div class="table-body">
+          <div class="table-row">
+            <div class="table-cell">
+              {{itinerary.startTime | moment}}
+              <i class="fa-solid fa-arrow-right-long"></i>
+              {{itinerary.endTime | moment}}
+            </div>
+            <div class="table-cell time">{{itinerary.duration | duration}}</div>
+          </div>
+        </div>
+      </div>
+      <div class="table">
+        <div class="table-body">
+          <div class="table-row itinerary">
+            {% for leg in itinerary.legs %}
+              {% set vehicleType = leg.mode | lower %}
+              {% if leg.mode === "BUS" and leg.trip.route.type === 702 %}
+                {% set vehicleType = "bus-express" %}
+              {% endif %}
+              {% set minutes = leg.duration | minutes %}
+              {% if loop.first and leg.mode === "WALK" and minutes <= 1 %}
+              {% elif loop.last and leg.mode === "WALK" and minutes <= 1 %}
+              {% else %}
+                {% set waitingTime = 0 %}
+                {% set nextLeg = itinerary.legs[loop.index0 + 1] %}
+                {% if nextLeg %}
+                  {% set waitingTime = leg.endTime | duration(nextLeg.startTime, true) %}
+                {% endif %}
+                {% if minutes > 5 or leg.mode !== "WALK" %}
+                  <div class="table-cell vehicle-{{vehicleType}}" style="--width:{{leg.duration | percent(itinerary.duration)}}%;">
+                    <div>
+                      <i class="{{maps.vehicleModes.get(leg.mode)}}"></i>
+                      {% if leg.mode === "WALK" %}
+                        {% if waitingTime | minutes <= 5 %}
+                          {{waitingTime | minutes + minutes}}
+                        {% else %}
+                          {{minutes}}
+                        {% endif %}
+                      {% else %}
+                        {{leg.trip.routeShortName}}
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+                {% if waitingTime | minutes > 5 %}
+                  <div class="table-cell vehicle-walk" style="--width:{{waitingTime | percent(itinerary.duration)}}%;">
+                    <div>
+                      <i class="fa-regular fa-clock"></i>
+                      {% if minutes <= 5 %}
+                        {{waitingTime | minutes + minutes}}
+                      {% else %}
+                        {{waitingTime | minutes}}
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="table departure">
+        {% set nonWalkingLegs = itinerary.legs | nonWalkingLegs %}
+        {% set firstNonWalkingLeg = nonWalkingLegs[0] %}
+        {% set secondNonWalkingLeg = nonWalkingLegs[1] %}
+        <div class="table-body">
+          <div class="table-row">
+            <div class="table-cell">
+              {{"DEPARTING_FROM" | translate({TIME: firstNonWalkingLeg.startTime | moment, STOP_NAME: firstNonWalkingLeg.from.stop.name}) | replace("<span>", '<span class="realtime">' if firstNonWalkingLeg.realtime else '<span class="schedule">')}}
+              {%- if firstNonWalkingLeg.from.stop.platformCode -%}
+                , {{maps.platformNames.get(firstNonWalkingLeg.mode) | lower}}
+                {{firstNonWalkingLeg.from.stop.platformCode}}
+              {% endif %}
+            </div>
+          </div>
+          {% if secondNonWalkingLeg %}
+            <div class="table-row">
+              <div class="table-cell">
+                {{"DEPARTING_THEN" | translate({TIME: secondNonWalkingLeg.startTime | moment, STOP_NAME: secondNonWalkingLeg.from.stop.name}) | replace("<span>", '<span class="realtime">' if secondNonWalkingLeg.realtime else '<span class="schedule">')}}
+                {%- if secondNonWalkingLeg.from.stop.platformCode -%}
+                , {{maps.platformNames.get(secondNonWalkingLeg.mode) | lower}}
+                  {{secondNonWalkingLeg.from.stop.platformCode}}
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </td>
+</tr>

@@ -1,0 +1,8 @@
+{
+  stations(ids:["digitraffic:HKI","digitraffic:PSL","digitraffic:POH","digitraffic:KUT"]) {
+    gtfsId
+    name
+    lat
+    lon
+  }
+}

@@ -51,7 +51,7 @@
   padding-right: 5px;
 }
 
-.publika-base table td.time {
+.publika-base .time {
   text-align: right;
 }
 
@@ -66,7 +66,8 @@
 }
 
 .publika-base.publika-digitraffic .stop-header img,
-.publika-base.publika-digitraffic.bar .bright.bold img {
+.publika-base.publika-digitraffic.bar .bright.bold img,
+.publika-base.publika-digitraffic .bright.bold img {
   height: 15px;
 }
 
@@ -153,6 +154,57 @@
 .publika-base table.bar span:not(:first-child) {
   font-size: 70%;
   margin-left: 5px;
+}
+
+.publika-base .table {
+  display: table;
+  width: 100%;
+}
+
+.publika-base .table-row {
+  display: table-row;
+}
+
+.publika-base .table-cell,
+.publika-base .table-head {
+  display: table-cell;
+  min-width: max-content;
+  padding-bottom: 4px;
+  width: var(--width);
+}
+
+.publika-base .table-heading {
+  display: table-header-group;
+  font-weight: bold;
+}
+
+.publika-base .table-foot {
+  display: table-footer-group;
+  font-weight: bold;
+}
+
+.publika-base .table-body {
+  display: table-row-group;
+}
+
+.publika-base .itinerary .table-cell:not(:first-child) {
+  padding-left: 4px;
+}
+
+.publika-base .itinerary .table-cell {
+  font-size: 90%;
+}
+
+.publika-base .departure {
+  font-size: 80%;
+  border-bottom: 1px solid;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.publika-base .table-cell span.schedule,
+.publika-base .table-cell span.realtime {
+  font-weight: bold;
 }
 
 @keyframes blinker {

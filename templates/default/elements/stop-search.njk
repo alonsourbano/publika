@@ -13,12 +13,14 @@
   </tr>
   {% set context = searchStop | contextualize %}
   {% include "templates/default/elements/sub-header.njk" %}
-  <tr class="stop-subheader">
-    <td colspan="{{defaults.colspan}}">
-      {{"STATION" | translate}}: {{searchStop.parentStation.gtfsId}} •
+  {% if searchStop.parentStation %}
+    <tr class="stop-subheader">
+      <td colspan="{{defaults.colspan}}">
+        {{"STATION" | translate}}: {{searchStop.parentStation.gtfsId}} •
     {{searchStop.parentStation.name}}
-    </td>
-  </tr>
+      </td>
+    </tr>
+  {% endif %}
 {% else %}
   <tr>
     <td colspan="{{defaults.colspan}}">

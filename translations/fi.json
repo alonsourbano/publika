@@ -37,6 +37,8 @@
   "STOP_MOVED": "Pysäkki siirretty",
   "NO_EFFECT": "Ei vaikutusta",
   "NO_PICKUP": "Vain poistuminen",
+  "DEPARTING_FROM": "Lähtee klo <span>{TIME}</span> pysäkiltä {STOP_NAME}",
+  "DEPARTING_THEN": "Ja sitten klo <span>{TIME}</span> pysäkiltä {STOP_NAME}",
   "ETA_NO_STOP": "Arvioitu saapumisaika on saatavilla vain pysäkeille",
   "BIKE_STATION_AVAILABILITY": "Pyöriä asemalla juuri nyt",
   "OFF_SEASON": "Tervetuloa kaupunkipyöräilijäksi taas keväällä!",

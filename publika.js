@@ -11,6 +11,18 @@ const NOTIFICATION = {
     }
   },
   NOTIFICATION: { RESOLVE: "NOTIFICATION" },
+  PLAN: {
+    SEARCH: {
+      FETCH: "FETCH_PLAN_SEARCH",
+      REJECT: "REJECT_PLAN_SEARCH",
+      RESOLVE: "RESOLVE_PLAN_SEARCH"
+    },
+    ITINERARY: {
+      FETCH: "FETCH_PLAN_ITINERARY",
+      REJECT: "REJECT_PLAN_ITINERARY",
+      RESOLVE: "RESOLVE_PLAN_ITINERARY"
+    }
+  },
   READY: {
     RESOLVE: "READY",
     INIT: "INIT",
@@ -134,7 +146,7 @@ Module.register("publika", {
       const batch = instance.stops
         .filter((stop) => !stop.disabled)
         .filter(this.validateStopRules)
-        .map((stop) => {
+        .map((stop, index) => {
           if (stop.type === "cluster") {
             this.notify(this.translate("CLUSTER"));
             return undefined;
@@ -145,7 +157,13 @@ Module.register("publika", {
               payload: { id: stop.id, search: stop.search }
             };
           }
-          const { id, stopTimesCount, type, minutesFrom } = stop;
+          if (stop.type === "plan") {
+            return {
+              notification: NOTIFICATION.PLAN.SEARCH.FETCH,
+              payload: { index, ...stop }
+            };
+          }
+          const { id, stopTimesCount, type, minutesFrom, eta } = stop;
           if (type === "bikeStation") {
             if (this.isBikeSeason()) {
               return {
@@ -167,6 +185,7 @@ Module.register("publika", {
               stopTimesCount: stopTimesCount ?? instance.config.stopTimesCount,
               type,
               minutesFrom,
+              eta,
               omitNonPickups
             }
           };
@@ -241,6 +260,47 @@ Module.register("publika", {
     this.rejectSocketNotification(notification, payload);
   },
 
+  processPlanNotification: function (instance, notification, payload) {
+    const { data, ...stop } = payload;
+    if (notification === NOTIFICATION.PLAN.SEARCH.RESOLVE) {
+      const plan = this.updatePlanSearch(instance, stop, data);
+      return this.sendInstanceSocketNotification(
+        NOTIFICATION.PLAN.ITINERARY.FETCH,
+        {
+          index: stop.index,
+          stations: plan.stations,
+          stopTimesCount: plan.stopTimesCount ?? instance.config.stopTimesCount
+        }
+      );
+    }
+    if (notification === NOTIFICATION.PLAN.SEARCH.REJECT) {
+      return setTimeout(() => {
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.PLAN.SEARCH.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.retry));
+    }
+    if (notification === NOTIFICATION.PLAN.ITINERARY.RESOLVE) {
+      setTimeout(() => {
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.PLAN.ITINERARY.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.update.plan));
+      return this.updatePlanItinerary(instance, stop, data);
+    }
+    if (notification === NOTIFICATION.PLAN.ITINERARY.REJECT) {
+      return setTimeout(() => {
+        this.sendInstanceSocketNotification(
+          NOTIFICATION.PLAN.ITINERARY.FETCH,
+          stop
+        );
+      }, this.getNextInterval(instance.intervals.retry));
+    }
+    this.rejectSocketNotification(notification, payload);
+  },
+
   checkSocketNotification: function (origin, target) {
     return Object.keys(target).some((item) => target[item] === origin);
   },
@@ -306,6 +366,18 @@ Module.register("publika", {
         notificationType,
         payload
       );
+    }
+    if (
+      this.checkSocketNotification(
+        notificationType,
+        NOTIFICATION.PLAN.SEARCH
+      ) ||
+      this.checkSocketNotification(
+        notificationType,
+        NOTIFICATION.PLAN.ITINERARY
+      )
+    ) {
+      return this.processPlanNotification(instance, notificationType, payload);
     }
 
     this.rejectSocketNotification(notification, payload);
@@ -492,6 +564,7 @@ Module.register("publika", {
             socketWatcher: 100 * 1000,
             updateStatusWatcher: 5 * 1000,
             bikeStation: 45 * 1000,
+            plan: 45 * 1000,
             default: 45 * 1000
           },
           retry: [1 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 45 * 1000]
@@ -502,11 +575,15 @@ Module.register("publika", {
         stops: module.config.stops
           .filter((stop) => !stop.disabled)
           .filter(this.validateStopRules)
-          .map((stop) => ({
-            ...stop,
-            id: stop.id ?? stop,
-            stoptimes: { empty: true }
-          }))
+          .map((stop) =>
+            stop.type === "plan"
+              ? stop
+              : {
+                ...stop,
+                id: stop.id ?? stop,
+                stoptimes: { empty: true }
+              }
+          )
       }))
       .map((instance) => ({
         ...instance,
@@ -663,15 +740,32 @@ Module.register("publika", {
     const index = instance.stops.findIndex(
       (stoptime) => stoptime.id === stop.id
     );
-    const configIndex = instance.config.stops.findIndex(
-      (stoptime) => stoptime.id === stop.id
-    );
-    const { stops, ...meta } = data;
+    const { stops, stations, ...meta } = data;
     instance.stops[index].meta = meta;
-    instance.stops[index].searchStops = stops;
+    instance.stops[index].searchStops = stops ?? stations;
     instance.stops[index].updateTime = moment();
     instance.stops[index].updateAge = 0;
     this.updateDom();
+  },
+
+  updatePlanSearch: function (instance, stop, data) {
+    const from = data.stations.find(
+      (station) => station?.gtfsId === `${instance.config.feed}:${stop.from}`
+    );
+    const to = data.stations.find(
+      (station) => station?.gtfsId === `${instance.config.feed}:${stop.to}`
+    );
+    instance.stops[stop.index].stations = { from, to };
+    return instance.stops[stop.index];
+  },
+
+  updatePlanItinerary: function (instance, stop, data) {
+    const { plan, ...meta } = data;
+    instance.stops[stop.index].meta = meta;
+    instance.stops[stop.index].plan = plan;
+    instance.stops[stop.index].updateTime = moment();
+    instance.stops[stop.index].updateAge = 0;
+    return this.updateDom();
   },
 
   rejectStoptime: function (instance, id) {
@@ -1003,13 +1097,15 @@ Module.register("publika", {
             ["GONDOLA", this.translate("TRACK")],
             ["RAIL", this.translate("TRACK")],
             ["SUBWAY", this.translate("TRACK")],
-            ["TRAM", this.translate("PLATFORM")]
+            ["TRAM", this.translate("PLATFORM")],
+            ["TRANSIT", this.translate("PLATFORM")],
+            ["WALK", this.translate("PLATFORM")]
           ]),
           vehicleModes: new Map([
             // Vehicle modes according to DigiTransit documentation
             ["AIRPLANE", "fa-solid fa-plane-up"],
             ["BICYCLE", "fa-solid fa-bicycle"],
-            ["BUS", "fa-solid fa-bus-simple"],
+            ["BUS", "fa-solid fa-bus"],
             ["CABLE_CAR", "fa-solid fa-cable-car"],
             ["CAR", "fa-solid fa-car"],
             ["FERRY", "fa-solid fa-ferry"],
@@ -1017,7 +1113,9 @@ Module.register("publika", {
             ["GONDOLA", "fa-solid fa-cable-car"], // A gondola (lift) should be the same as cable car
             ["RAIL", "fa-solid fa-train"],
             ["SUBWAY", "fa-solid fa-m"],
-            ["TRAM", "fa-solid fa-train-tram"]
+            ["TRAM", "fa-solid fa-train-tram"],
+            ["TRANSIT", "fa-solid fa-bus-simple"],
+            ["WALK", "fa-solid fa-person-walking"]
           ])
         }
       }
@@ -1053,11 +1151,43 @@ Module.register("publika", {
           : { ...input }
       )
     );
+    this._nunjucksEnvironment.addFilter(
+      "duration",
+      (time1, time2, returnNumber = false) => {
+        const duration = time2
+          ? moment.duration(moment(time2).diff(moment(time1)))
+          : moment.duration(time1, "seconds");
+        if (returnNumber) {
+          return duration.asSeconds();
+        }
+        const hours = duration.hours();
+        const minutes = duration.minutes();
+        const durationString = `${hours > 0 ? `${hours} h ` : ""}${minutes > 0 ? `${minutes} min` : ""
+          }`;
+        return nunjucks.runtime.markSafe(durationString);
+      }
+    );
     this._nunjucksEnvironment.addFilter("letterize", (input) =>
       nunjucks.runtime.markSafe(String.fromCharCode(96 + parseInt(input)))
     );
+    this._nunjucksEnvironment.addFilter("minutes", (input) =>
+      nunjucks.runtime.markSafe(
+        Math.round(moment.duration(input, "seconds").asMinutes())
+      )
+    );
     this._nunjucksEnvironment.addFilter("moment", (input) =>
       nunjucks.runtime.markSafe(moment(input).format(this.timeFormat))
+    );
+    this._nunjucksEnvironment.addFilter("nonWalkingLegs", (input) =>
+      nunjucks.runtime.markSafe(input.filter((leg) => leg.mode !== "WALK"))
+    );
+    this._nunjucksEnvironment.addFilter("percent", (input, total) =>
+      nunjucks.runtime.markSafe((input / total) * 100)
+    );
+    this._nunjucksEnvironment.addFilter("remainingTime", (input) =>
+      nunjucks.runtime.markSafe(
+        Math.round(moment.duration(moment(input).diff(moment())).asMinutes())
+      )
     );
     this._nunjucksEnvironment.addFilter("translate", (input, variables) =>
       nunjucks.runtime.markSafe(this.translate(input, variables))

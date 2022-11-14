@@ -1,0 +1,52 @@
+{
+  plan(numItineraries: 5, from: {lat: 60.230078, lon: 24.883252}, to: {lat: 60.450274, lon: 22.297114}, transportModes: [{mode: WALK}, {mode: RAIL}]) {
+    itineraries {
+      walkDistance
+      duration
+      legs {
+        mode
+        startTime
+        endTime
+        realTime
+        trip {
+          tripShortName
+          tripHeadsign
+          routeShortName
+          bikesAllowed
+          route {
+            type
+          }
+        }
+        from {
+          ...place
+        }
+        to {
+          ...place
+        }
+        agency {
+          gtfsId
+          name
+        }
+        distance
+        duration
+        legGeometry @include(if: false) {
+          length
+          points
+        }
+      }
+    }
+  }
+}
+
+fragment place on Place {
+  lat
+  lon
+  name
+  stop {
+    gtfsId
+    code
+    desc
+    name
+    platformCode
+  }
+}
