@@ -37,6 +37,8 @@
   "STOP_MOVED": "Stop moved",
   "NO_EFFECT": "No effect",
   "NO_PICKUP": "Drop-off only",
+  "DEPARTING_FROM": "Departing at <span>{TIME}</span> from the stop {STOP_NAME}",
+  "DEPARTING_THEN": "And then at <span>{TIME}</span> from the stop {STOP_NAME}",
   "ETA_NO_STOP": "ETA is only available for stops",
   "BIKE_STATION_AVAILABILITY": "Bikes available at the station right now",
   "OFF_SEASON": "Welcome to use the city bikes again in the spring!",

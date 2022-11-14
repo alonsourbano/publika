@@ -15,10 +15,15 @@
   border-radius: 4px;
 } */
 
-.publika-color :not(.cancelled-trip).route-line div {
+.publika-color :not(.cancelled-trip).route-line div,
+.publika-color .itinerary .table-cell div {
   border-radius: 3px;
   color: #fff;
   padding-top: 2px;
+}
+
+.publika-color .itinerary .table-cell div {
+  padding: 2px 4px 0 4px;
 }
 
 .publika-color :not(.cancelled-trip).route-line div .first {
@@ -238,12 +243,22 @@
   background-color: #7dc02d;
 }
 
-.publika-color.publika-digitraffic .vehicle-rail:not(.cancelled-trip).route-line div {
+.publika-color.publika-digitraffic .vehicle-rail:not(.cancelled-trip).route-line div,
+.publika-color.publika-digitraffic .itinerary .vehicle-rail div {
   background-color: #00a149;
 }
-
 
 .publika-color .no-pickup.time,
 .publika-color .no-pickup.realtime.time {
   color: #f2b62d;
+}
+
+.publika-color .vehicle-walk:not(.cancelled-trip).route-line div,
+.publika-color .itinerary .vehicle-walk div {
+  background-color: #ddd;
+  color: #000;
+}
+
+.publika-color .table-cell span.realtime {
+  color: #46850e;
 }

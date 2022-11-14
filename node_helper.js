@@ -3,8 +3,10 @@ const moment = require("moment");
 const fetch = require("node-fetch");
 const NodeHelper = require("node_helper");
 const getStopTimesQuery = require("./graphiql/stop-times");
-const getHSLStopSearchQuery = require("./graphiql/stop-search");
-const getHSLBikeStationQuery = require("./graphiql/bike-station");
+const getStopSearchQuery = require("./graphiql/stop-search");
+const getBikeStationQuery = require("./graphiql/bike-station");
+const getPlanSearchQuery = require("./graphiql/plan-search");
+const getPlanItineraryQuery = require("./graphiql/plan-itinerary");
 const Log = require("logger");
 const { v4: uuidv4 } = require("uuid");
 
@@ -34,11 +36,15 @@ const processStopTimeData = (stoptimesWithoutPatterns) =>
         longName: stoptime.trip.route.longName
       },
       stoptimes: stoptime.trip.stoptimes
-        .filter((item) => item.scheduledDeparture > stoptime.scheduledDeparture)
-        .map((item) => ({
-          ...item,
-          time: moment.unix(stoptime.serviceDay + item.realtimeDeparture)
-        }))
+        ? stoptime.trip.stoptimes
+          .filter(
+            (item) => item.scheduledDeparture > stoptime.scheduledDeparture
+          )
+          .map((item) => ({
+            ...item,
+            time: moment.unix(stoptime.serviceDay + item.realtimeDeparture)
+          }))
+        : undefined
     }
   }));
 
@@ -141,6 +147,20 @@ module.exports = NodeHelper.create({
             item.payload
           );
         }
+        if (item.notification === "FETCH_PLAN_SEARCH") {
+          return this.fetchPlanSearch(
+            instance ?? instanceId,
+            url,
+            item.payload
+          );
+        }
+        if (item.notification === "FETCH_PLAN_ITINERARY") {
+          return this.fetchPlanItinerary(
+            instance ?? instanceId,
+            url,
+            item.payload
+          );
+        }
         Log.warn(
           `Unhandled socket notification ${item.notification}`,
           item.payload
@@ -150,6 +170,14 @@ module.exports = NodeHelper.create({
 
     if (type === "FETCH_BIKE_STATION") {
       return this.fetchBikeStation(instance ?? instanceId, url, payload);
+    }
+
+    if (type === "FETCH_PLAN_SEARCH") {
+      return this.fetchPlanSearch(instance ?? instanceId, url, payload);
+    }
+
+    if (type === "FETCH_PLAN_ITINERARY") {
+      return this.fetchPlanItinerary(instance ?? instanceId, url, payload);
     }
 
     if (type === "FETCH_STOP_STOPTIMES") {
@@ -198,6 +226,39 @@ module.exports = NodeHelper.create({
           error,
           instance?.id ?? instance,
           "REJECT_BIKE_STATION",
+          payload
+        )
+    );
+  },
+
+  fetchPlanSearch: function (instance, url, payload) {
+    this.getPlanSearch(
+      url,
+      instance.feed,
+      payload,
+      (data) =>
+        this.resolve(instance?.id ?? instance, "RESOLVE_PLAN_SEARCH", data),
+      (error) =>
+        this.reject(
+          error,
+          instance?.id ?? instance,
+          "REJECT_PLAN_SEARCH",
+          payload
+        )
+    );
+  },
+
+  fetchPlanItinerary: function (instance, url, payload) {
+    this.getPlanItinerary(
+      url,
+      payload,
+      (data) =>
+        this.resolve(instance?.id ?? instance, "RESOLVE_PLAN_ITINERARY", data),
+      (error) =>
+        this.reject(
+          error,
+          instance?.id ?? instance,
+          "REJECT_PLAN_ITINERARY",
           payload
         )
     );
@@ -256,7 +317,7 @@ module.exports = NodeHelper.create({
     try {
       fetch(url, {
         method: "POST",
-        body: getHSLStopSearchQuery(stop.id),
+        body: getStopSearchQuery(feed, stop.id),
         headers: this.getHeaders()
       })
         .then(NodeHelper.checkFetchStatus)
@@ -267,9 +328,8 @@ module.exports = NodeHelper.create({
               ...stop,
               data: {
                 responseType: "STOP_SEARCH",
-                stops: json.data.stops.filter((item) =>
-                  item.gtfsId.startsWith(`${feed}:`)
-                )
+                stops: json.data.stops,
+                stations: json.data.stations
               }
             });
           }
@@ -295,7 +355,8 @@ module.exports = NodeHelper.create({
           moment()
             .add(stop.minutesFrom ?? 0, "minutes")
             .unix(),
-          stop.omitNonPickups
+          stop.omitNonPickups,
+          stop.eta
         ),
         headers: this.getHeaders()
       })
@@ -376,7 +437,7 @@ module.exports = NodeHelper.create({
     try {
       fetch(url, {
         method: "POST",
-        body: getHSLBikeStationQuery(stop.id),
+        body: getBikeStationQuery(stop.id),
         headers: this.getHeaders()
       })
         .then(NodeHelper.checkFetchStatus)
@@ -396,6 +457,58 @@ module.exports = NodeHelper.create({
               responseType: "BIKE_STATION",
               bikeRentalStation: data
             }
+          });
+        })
+        .catch((error) => reject(error));
+    } catch (error) {
+      return reject(error);
+    }
+  },
+
+  getPlanSearch: function (url, feed, payload, resolve, reject) {
+    try {
+      fetch(url, {
+        method: "POST",
+        body: getPlanSearchQuery(feed, payload.from, payload.to),
+        headers: this.getHeaders()
+      })
+        .then(NodeHelper.checkFetchStatus)
+        .then((response) => response.json())
+        .then((json) => {
+          if (!json.data) {
+            return reject("No data");
+          }
+          return resolve({
+            ...payload,
+            data: json.data
+          });
+        })
+        .catch((error) => reject(error));
+    } catch (error) {
+      return reject(error);
+    }
+  },
+
+  getPlanItinerary: function (url, payload, resolve, reject) {
+    try {
+      fetch(url, {
+        method: "POST",
+        body: getPlanItineraryQuery(
+          payload.stations.from,
+          payload.stations.to,
+          payload.stopTimesCount
+        ),
+        headers: this.getHeaders()
+      })
+        .then(NodeHelper.checkFetchStatus)
+        .then((response) => response.json())
+        .then((json) => {
+          if (!json.data) {
+            return reject("No data");
+          }
+          return resolve({
+            ...payload,
+            data: json.data
           });
         })
         .catch((error) => reject(error));

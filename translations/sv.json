@@ -37,6 +37,8 @@
   "STOP_MOVED": "Stopp flyttas",
   "NO_EFFECT": "Ingen effekt",
   "NO_PICKUP": "Endast för avstigning",
+  "DEPARTING_FROM": "Avgår kl. <span>{TIME}</span> från hållplatsen {STOP_NAME}",
+  "DEPARTING_THEN": "Och sedan kl. <span>{TIME}</span> från hållplatsen {STOP_NAME}",
   "ETA_NO_STOP": "Beräknad ankomsttid är endast tillgänglig för stopp",
   "BIKE_STATION_AVAILABILITY": "Antal cyklar just nu",
   "OFF_SEASON": "Välkommen som användare av stadscyklar igen nästa vår!",

@@ -1,6 +1,4 @@
-const alerts = require("./alerts");
-
-module.exports = (feed, type, stop, count, startTime, omitNonPickups) => `{
+module.exports = (feed, type, stop, count, startTime, omitNonPickups, eta) => `{
     ${type}(id: "${feed}:${stop}") {
       gtfsId
       name
@@ -26,7 +24,7 @@ module.exports = (feed, type, stop, count, startTime, omitNonPickups) => `{
           gtfsId
           tripHeadsign
           routeShortName
-          stoptimes {
+          stoptimes @include(if: ${!!eta}) {
             scheduledDeparture
             realtimeDeparture
             realtime
@@ -41,20 +39,70 @@ module.exports = (feed, type, stop, count, startTime, omitNonPickups) => `{
             color
             textColor
             longName
-            ${alerts}
+            alerts {
+              ...fragmentAlerts
+            }
           }
-          ${alerts}
+          alerts {
+            ...fragmentAlerts
+          }
         }
       }
       routes {
-        ${alerts}
+        alerts {
+          ...fragmentAlerts
+        }
       }
       stops {
         routes {
-          ${alerts}
+          alerts {
+            ...fragmentAlerts
+          }
         }
-        ${alerts}
+        alerts {
+          ...fragmentAlerts
+        }
       }
-      ${alerts}
+      alerts {
+        ...fragmentAlerts
+      }
+    }
+  }
+  
+  fragment fragmentAlerts on Alert {
+    alertHash
+    id
+    alertEffect
+    alertCause
+    alertSeverityLevel
+    alertHeaderText
+    alertHeaderTextTranslations {
+      text
+      language
+    }
+    alertDescriptionText
+    alertDescriptionTextTranslations {
+      text
+      language
+    }
+    alertUrl
+    alertUrlTranslations {
+      text
+      language
+    }
+    effectiveStartDate
+    effectiveEndDate
+    route {
+      gtfsId
+      shortName
+      longName
+    }
+    trip {
+      gtfsId
+      routeShortName
+    }
+    stop {
+      gtfsId
+      name
     }
   }`;

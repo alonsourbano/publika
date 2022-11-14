@@ -1,10 +1,14 @@
-module.exports = (code) => `{
-  stops(name: "${code}") {
+module.exports = (feed, code) =>
+  `{
+  ${feed === "digitraffic" ? "stations" : "stops"
+  }(feeds: ["${feed}"], name: "${code}") {
     gtfsId
     name
     code
     desc
     zoneId
+    lat
+    lon
     vehicleMode
     platformCode
     locationType
@@ -13,10 +17,6 @@ module.exports = (code) => `{
       name
     }
     parentStation {
-      gtfsId
-      name
-    }
-    cluster {
       gtfsId
       name
     }
