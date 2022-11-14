@@ -154,7 +154,7 @@ Module.register("publika", {
           if (stop.search) {
             return {
               notification: NOTIFICATION.SEARCH_STOP.FETCH,
-              payload: { id: stop.id, search: stop.search }
+              payload: { id: stop.id, index, search: stop.search }
             };
           }
           if (stop.type === "plan") {
@@ -168,7 +168,7 @@ Module.register("publika", {
             if (this.isBikeSeason()) {
               return {
                 notification: NOTIFICATION.BIKE.STATION.FETCH,
-                payload: { id, type }
+                payload: { id, index, type }
               };
             }
             this.notify(this.translate("OFF_SEASON_DESC"));
@@ -182,6 +182,7 @@ Module.register("publika", {
             notification: NOTIFICATION.STOP_STOPTIMES.FETCH,
             payload: {
               id: id ?? stop,
+              index,
               stopTimesCount: stopTimesCount ?? instance.config.stopTimesCount,
               type,
               minutesFrom,
